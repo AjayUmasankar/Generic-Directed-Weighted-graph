@@ -5,6 +5,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <vector>
 
 namespace gdwg {
 
@@ -79,6 +80,11 @@ class Graph {
 
     //std::cout << "Inserting Edge: " << *src_sp << " " << *dst_sp << " " << w << "\n";
     std::set<Edge, EdgeCmp>& edge_set = edge_map[src_sp];
+    for(const Edge& edge : edge_set) {
+      if(*edge.src.lock() == src && *edge.dst.lock() == dst && *edge.weight == w) {
+        return false;
+      }
+    }
     edge_set.insert(e);
     return true;
   }
@@ -99,16 +105,61 @@ class Graph {
   }
 
   bool IsConnected(const N& src, const N& dst) {
-    std::set<Edge, EdgeCmp> edge_set = edge_map.find(src)->second;
+    std::shared_ptr<N> src_sp = node_map[src];
+    std::set<Edge, EdgeCmp> edge_set = edge_map.find(src_sp)->second;
     for(const auto &[from, to, weight] : edge_set) {
-      if(*dst == *to) {
+      if(dst == *to.lock()) {
         return true;
       }
     }
     return false;
   }
 
+  std::vector<N> GetNodes() {
+    std::vector<N> node_vector;
+    for(const auto &[fir,sec] : node_map) {
+      node_vector.push_back(*sec);
+    }
+    return node_vector;
+  }
 
+  std::vector<N> GetConnected(const N& src) {
+    std::shared_ptr<N> src_sp = node_map[src];
+    // TODO: this set automatically orders?
+    std::set<N> seen_nodes;
+    //std::set<Edge,
+    for(Edge e : edge_map[src_sp]) {
+      seen_nodes.insert(*e.dst.lock());
+    }
+    std::vector<N> connected_nodes{seen_nodes.begin(), seen_nodes.end()};
+    return connected_nodes;
+  }
+
+  std::vector<E> GetWeights(const N& src, const N& dst) {
+    std::shared_ptr<N> src_sp = node_map[src];
+    std::vector<E> weights;
+//    // TODO: this set automatically orders?
+//    std::multiset<E> weights_set;
+    for(Edge e : edge_map[src_sp]) {
+      if(*e.dst.lock() == dst) {
+        weights.push_back(*e.weight);
+      }
+    }
+    return weights;
+  }
+
+  void Clear() {
+    // TODO: Do we need to .reset() any pointers?
+    node_map.erase(node_map.begin(), node_map.end());
+    edge_map.erase(edge_map.begin(), edge_map.end());
+//    for(auto it = node_map.begin(); it != node_map.end(); ++it) {
+//      // it->second.reset();
+//      it = node_map.erase(it);
+//    }
+//    for(auto it = edge_map.begin(); it != edge_map.end(); ++it) {
+//      it = edge_map.erase(it);
+//    }
+  }
 
 //################################ FRIENDS ######################################
   friend std::ostream& operator<<(std::ostream& os, const gdwg::Graph<N, E>& g) {
