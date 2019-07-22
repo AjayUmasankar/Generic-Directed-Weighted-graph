@@ -46,15 +46,91 @@ class Graph {
 
 
   class const_iterator {
-  //   public:
-  //    using iterator_category = std::bidirectional_iterator_tag;
-  //    using value_type = std::tuple<N, N, E>;
-  //    using reference = std::tuple<const N&, const N&, const E&>;
-  //    using pointer = T*;
-  //    using difference_type = int;
+   public:
+    using iterator_category = std::bidirectional_iterator_tag;
+    using value_type = std::tuple<N, N, E>;
+    using reference = std::tuple<const N&, const N&, const E&>;
+    using pointer = std::tuple<N, N, E>*;
+    using difference_type = int;
 
-      // we store an edge inside an iterator
-      // difference between start() and current iterator pos used to index into ordered edge set?
+    reference operator*() const {
+      Edge cur = *index_;
+      if(cur.src.expired() || cur.dst.expired()) {
+        std::cout << "Expired ... " << std::endl;
+      }
+      return {*cur.src.lock(), *cur.dst.lock(), *cur.weight};
+    }
+
+    pointer operator->() const { return &(operator*()); }
+
+    const_iterator operator++() {
+      ++index_;
+      return *this;
+    }
+
+    const_iterator operator++(int) {
+      auto copy{*this};
+      ++(*this);
+      return copy;
+    }
+
+    const_iterator operator--() {
+      --index_;
+      return *this;
+    }
+    const_iterator operator--(int) {
+      auto copy{*this};
+      --(*this);
+      return copy;
+    }
+
+    friend bool operator==(const const_iterator& lhs, const const_iterator& rhs) {
+      // TODO: Need to check both iterators have same set of edges as well?
+      // ^ in the case of comparing iterators from two different graphs
+      (void) lhs;
+      (void) rhs;
+      return lhs.index_ == rhs.index_;
+//      if(lhs.index_ != lhs.edges_.end() && rhs.index_ != rhs.edges_.end()) {
+//        return (*lhs == *rhs);
+//      } else if (lhs.index_ == lhs.edges_.end() && rhs.index_ == rhs.edges_.end()) {
+//        return true;
+//      } else {
+//        return false;
+//      }
+
+
+
+//      N src1;
+//      N dst1;
+//      E weight1;
+//      std::tie(src1, dst1, weight1) = *lhs;
+//      N src2;
+//      N dst2;
+//      E weight2;
+//      std::tie(src2, dst2, weight2) = *rhs;
+//      std::cout<<src1 << " " << dst1 << " " << weight1 <<std::endl;
+//      std::cout<<src2 << " " << dst2 << " " << weight2 <<std::endl;
+
+
+      //return (*lhs == *rhs);
+
+
+//      Edge lhs_edge = *lhs;
+//      Edge rhs_edge = *rhs;
+//      return (*lhs_edge.src.lock() == *rhs_edge.src.lock() && *lhs_edge.dst.lock() == *rhs_edge.dst.lock() && *lhs_edge.weight == *rhs_edge.weight);
+    }
+
+    friend bool operator!=(const const_iterator& lhs, const const_iterator& rhs) {
+      return !(lhs == rhs);
+    }
+
+   private:
+    explicit const_iterator(const std::set<Edge, EdgeCmp> edges, typename std::set<Edge, EdgeCmp>::iterator index):  index_{index}, edges_{edges} {}
+    typename std::set<Edge, EdgeCmp>::iterator index_;
+    const std::set<Edge, EdgeCmp> edges_;
+
+
+    friend class Graph;
   };
 
 //####################################  METHODS ########################################
@@ -176,6 +252,35 @@ class Graph {
       std::cout << ")\n";
     }
     return os;
+  }
+
+//################################ ITERATORS ######################################
+
+  // TODO: can all_edges be references
+  const_iterator begin() const { return cbegin(); }
+  const_iterator cbegin() const {
+    std::set<Edge, EdgeCmp> all_edges = GetEdges();
+    return const_iterator{all_edges, all_edges.begin()};
+  }
+  const_iterator end() const { return cend(); }
+  const_iterator cend() const {
+    std::set<Edge, EdgeCmp> all_edges = GetEdges();
+    return const_iterator{all_edges, all_edges.end()};
+  }
+//################################ HELPERS ######################################
+  std::set<Edge, EdgeCmp> GetEdges() const {
+    std::set<Edge, EdgeCmp> edges;
+    for (const auto &[node, node_ptr] : node_map) {
+      // cant use edge_map[node_ptr] or else const qualifier isnt satisfied
+      const std::set<Edge, EdgeCmp>& cur_set = edge_map.find(node_ptr)->second;
+      edges.insert(cur_set.begin(), cur_set.end());
+    }
+//  prints all edges correctly
+//    for(Edge e : edges) {
+//      std::cout<<*e.src.lock() << " " << *e.dst.lock() << " " << *e.weight << std::endl;
+//    }
+//    std::cout<<"\n";
+    return edges;
   }
  private:
   // maps input nodes into our heap-allocated equivalent

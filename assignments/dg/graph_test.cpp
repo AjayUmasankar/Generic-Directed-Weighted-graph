@@ -74,7 +74,7 @@ SCENARIO("Methods on more complex sample graphs work as expected") {
 //                  ")\n"
 //                  "3 (\n"
 //                  "  2 | -8\n"
-//                  "  2 | 2\n"
+//                  "  2 | 2\n"  -> 6 | -8 (error in assignment spec)
 //                  ")\n"
 //                  "4 (\n"
 //                  "  1 | -4\n"
