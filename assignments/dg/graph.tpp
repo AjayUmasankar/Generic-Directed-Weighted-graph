@@ -4,18 +4,15 @@
 #include <set>
 #include <vector>
 
-
 namespace gdwg {
 
-// methods
 template <typename N, typename E>
 bool Graph<N, E>::InsertNode(const N& val) {
-  if(node_map.find(val) != node_map.end())
+  if (node_map.find(val) != node_map.end())
     return false;
 
   N val_copy = val;
   std::shared_ptr<N> node = std::make_shared<N>(val_copy);
-  //node_set.emplace(val);
   node_map.emplace(val_copy, node);
 
   // creates empty edge set for edges from this node
@@ -26,10 +23,14 @@ bool Graph<N, E>::InsertNode(const N& val) {
 
 template <typename N, typename E>
 bool Graph<N, E>::InsertEdge(const N& src, const N& dst, const E& w) {
-  // shared_ptr to tuple?
+  // insert nodes if they don't exist
+  // no effect if nodes already exist, see above
+  InsertNode(src);
+  InsertNode(dst);
+
   std::shared_ptr<N> src_sp = node_map.find(src)->second;
   std::shared_ptr<N> dst_sp = node_map.find(dst)->second;
-  Edge e{src_sp,dst_sp,std::make_shared<E>(w)};
+  Edge e{src_sp, dst_sp, std::make_shared<E>(w)};
 
   //std::cout << "Inserting Edge: " << *src_sp << " " << *dst_sp << " " << w << "\n";
   std::set<Edge, EdgeCmp>& edge_set = edge_map[src_sp];
