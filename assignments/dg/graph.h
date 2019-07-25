@@ -201,6 +201,27 @@ class Graph {
   }
 
 // friends
+  Graph<N, E>& operator=(const Graph<N, E>& other) {
+    /*
+      if (this != &other)
+        then do the bottom?
+     */
+    node_map = other.node_map;
+    edge_map = other.edge_map;
+    return *this;
+  }
+
+  Graph<N, E>& operator=(Graph<N, E>&& other) {
+    /*
+      if (this != &other)
+        then do the bottom?
+     */
+    node_map = std::move(other.node_map);
+    edge_map = std::move(other.edge_map);
+    other.Clear();
+    return *this;
+  }
+
   friend std::ostream& operator<<(std::ostream& os, const gdwg::Graph<N, E>& g) {
     std::set<std::shared_ptr<N>, NodeCmp> node_set;
     for(const auto &[fir,sec] : g.node_map) {

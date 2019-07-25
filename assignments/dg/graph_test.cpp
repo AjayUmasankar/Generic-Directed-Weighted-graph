@@ -239,10 +239,23 @@ SCENARIO("Graph constructor with initializer lists") {
   }
 }
 
-SCENARIO("Graph copy constructor works") {
+SCENARIO("Graph copy constructor/assignment works") {
   GIVEN("Graph constructed with initializer list of chars") {
     gdwg::Graph<char, std::string> g{'c', 's', 'e'};
     WHEN("Copy constructor is used") {
+      gdwg::Graph<char, std::string> cp{g};
+      THEN("Graph is copied with the nodes as expected") {
+        REQUIRE(cp.isEmpty() == false);
+        REQUIRE(cp.numNodes() == 3);
+        REQUIRE(cp.numEdges() == 0);
+
+        REQUIRE(cp.IsNode('c') == true);
+        REQUIRE(cp.IsNode('s') == true);
+        REQUIRE(cp.IsNode('e') == true);        
+      }
+    }
+
+    WHEN("Copy assignment is used") {
       gdwg::Graph<char, std::string> cp = g;
       THEN("Graph is copied with the nodes as expected") {
         REQUIRE(cp.isEmpty() == false);
@@ -260,6 +273,16 @@ SCENARIO("Graph copy constructor works") {
     std::vector<int> v{1,2,3,4,5};
     gdwg::Graph<int, int> g{v.begin(), v.end()};
     WHEN("Copy constructor is used") {
+      gdwg::Graph<int, int> cp{g};
+      THEN("Copy of graph has vector as nodes") {
+        REQUIRE(cp.isEmpty() == false);
+        REQUIRE(cp.numNodes() == v.size());
+        for (const auto& e : v)
+          REQUIRE(cp.IsNode(e));
+      }
+    }
+
+    WHEN("Copy assignment is used") {
       gdwg::Graph<int, int> cp = g;
       THEN("Copy of graph has vector as nodes") {
         REQUIRE(cp.isEmpty() == false);
@@ -281,6 +304,21 @@ SCENARIO("Graph copy constructor works") {
     auto e = std::vector<std::tuple<std::string, std::string, double>>{e1, e2};
     gdwg::Graph<std::string, double> g{e.begin(), e.end()};
     WHEN("Copy constructor is used") {
+      gdwg::Graph<std::string, double> cp{g};
+      THEN("Copy of graph has nodes and connected edges as expected") {
+        REQUIRE(cp.IsNode(s1));
+        REQUIRE(cp.IsNode(s2));
+        REQUIRE(cp.IsNode(s3));
+        REQUIRE(cp.IsConnected(s1, s2) == true);
+        REQUIRE(cp.GetWeights(s1, s2)[0] == w1);
+        REQUIRE(cp.GetConnected(s1)[0] == s2);
+        REQUIRE(cp.IsConnected(s2, s3) == true);
+        REQUIRE(cp.GetWeights(s2, s3)[0] == w2);
+        REQUIRE(cp.GetConnected(s2)[0] == s3);
+      }
+    }
+
+    WHEN("Copy assignment is used") {
       gdwg::Graph<std::string, double> cp = g;
       THEN("Copy of graph has nodes and connected edges as expected") {
         REQUIRE(cp.IsNode(s1));
@@ -309,6 +347,23 @@ SCENARIO("Graph move constructor works") {
     auto e = std::vector<std::tuple<std::string, std::string, double>>{e1, e2};
     gdwg::Graph<std::string, double> g{e.begin(), e.end()};
     WHEN("Move constructor is used") {
+      gdwg::Graph<std::string, double> cp{std::move(g)};
+      THEN("Graph has been moved to another graph as expected") {
+        REQUIRE(cp.IsNode(s1));
+        REQUIRE(cp.IsNode(s2));
+        REQUIRE(cp.IsNode(s3));
+        REQUIRE(cp.IsConnected(s1, s2) == true);
+        REQUIRE(cp.GetWeights(s1, s2)[0] == w1);
+        REQUIRE(cp.GetConnected(s1)[0] == s2);
+        REQUIRE(cp.IsConnected(s2, s3) == true);
+        REQUIRE(cp.GetWeights(s2, s3)[0] == w2);
+        REQUIRE(cp.GetConnected(s2)[0] == s3);
+
+        REQUIRE(g.isEmpty());
+      }
+    }
+
+    WHEN("Move assignment is used") {
       gdwg::Graph<std::string, double> cp = std::move(g);
       THEN("Graph has been moved to another graph as expected") {
         REQUIRE(cp.IsNode(s1));
