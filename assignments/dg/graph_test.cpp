@@ -91,16 +91,10 @@ SCENARIO("Default Graph constructor and basic methods") {
       int weight = 1;
       REQUIRE(g.IsNode(node1) == false);
       REQUIRE(g.IsNode(node2) == false);
-      REQUIRE(g.InsertEdge(node1, node2, weight) == true);
-      THEN("Nodes and edges are inserted as expected") {
-        // this is a directed graph, so one edge!!
-        REQUIRE(g.numNodes() == 2);
-        REQUIRE(g.numEdges() == 1);
-        REQUIRE(g.IsNode(node1) == true);
-        REQUIRE(g.IsNode(node2) == true);
-        REQUIRE(g.IsConnected(node1, node2) == true);
-        REQUIRE(g.GetWeights(node1, node2)[0] == weight);
-        REQUIRE(g.GetConnected(node1)[0] == node2);
+      THEN("Exception is thrown and graph is unchanged") {
+        CHECK_THROWS_WITH(g.InsertEdge(node1, node2, weight), "Cannot call Graph::InsertEdge when either src or dst node does not exist");
+        REQUIRE(g.IsNode(node1) == false);
+        REQUIRE(g.IsNode(node2) == false);
       }
     }
   }
@@ -335,7 +329,7 @@ SCENARIO("Graph copy constructor/assignment works") {
   }
 }
 
-SCENARIO("Graph move constructor works") {
+SCENARIO("Graph move constructor/assignment works") {
   GIVEN("Vector of tuples<string, string, int>") {
     std::string s1{"Hello"};
     std::string s2{"how"};

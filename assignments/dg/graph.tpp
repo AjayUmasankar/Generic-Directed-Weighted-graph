@@ -23,10 +23,9 @@ bool Graph<N, E>::InsertNode(const N& val) {
 
 template <typename N, typename E>
 bool Graph<N, E>::InsertEdge(const N& src, const N& dst, const E& w) {
-  // insert nodes if they don't exist
-  // no effect if nodes already exist, see above
-  InsertNode(src);
-  InsertNode(dst);
+  if (!IsNode(src) || !IsNode(dst)) {
+    throw std::runtime_error("Cannot call Graph::InsertEdge when either src or dst node does not exist");
+  }
 
   std::shared_ptr<N> src_sp = node_map.find(src)->second;
   std::shared_ptr<N> dst_sp = node_map.find(dst)->second;
@@ -80,6 +79,9 @@ std::vector<N> Graph<N, E>::GetNodes() {
 
 template <typename N, typename E>
 std::vector<N> Graph<N, E>::GetConnected(const N& src) {
+  if (!IsNode(src)) {
+    throw std::out_of_range("Cannot call Graph::GetConnected if src doesn't exist in the graph");
+  }
   std::shared_ptr<N> src_sp = node_map[src];
   // TODO: this set automatically orders?
   std::set<N> seen_nodes;
@@ -93,6 +95,9 @@ std::vector<N> Graph<N, E>::GetConnected(const N& src) {
 
 template <typename N, typename E>
 std::vector<E> Graph<N, E>::GetWeights(const N& src, const N& dst) {
+  if (!IsNode(src) || !IsNode(dst)) {
+    throw std::out_of_range("Cannot call Graph::GetWeights if src or dst node don't exist in the graph");
+  }
   std::shared_ptr<N> src_sp = node_map[src];
   std::vector<E> weights;
   // TODO: this set automatically orders?

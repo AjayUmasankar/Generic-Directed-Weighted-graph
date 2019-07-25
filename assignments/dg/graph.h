@@ -26,6 +26,9 @@ class Graph {
       N dst;
       E weight;
       std::tie(src, dst, weight) = *it;
+      // insert nodes, no effect if they already exist
+      InsertNode(src);
+      InsertNode(dst);
       InsertEdge(src, dst, weight);
     }
   }
