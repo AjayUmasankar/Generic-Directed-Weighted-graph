@@ -1,4 +1,1 @@
-.clwb/
-bazel-*
-.vscode/
-compile_commands.json
+/home/matt/Desktop/comp6771-group/.gitignore
