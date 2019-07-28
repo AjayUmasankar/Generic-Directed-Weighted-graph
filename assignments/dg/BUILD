@@ -1,6 +1,9 @@
 cc_library(
     name = "graph",
-    hdrs = ["graph.h", "graph.tpp"],
+    hdrs = [
+        "graph.h",
+        "graphtpp.cpp",
+    ],
     deps = [],
 )
 

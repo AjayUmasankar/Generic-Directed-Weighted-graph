@@ -5,9 +5,12 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <string>
 #include <vector>
 
 namespace gdwg {
+
+
 
 template <typename N, typename E>
 class Graph {
@@ -17,8 +20,32 @@ class Graph {
     std::weak_ptr<N> dst;
     std::shared_ptr<E> weight;
   };
+  class Node {
+   public:
+    Node(N value) : node_sp{std::make_shared<N>(value)} {};
+    N& operator* () const { return *node_sp; }
+    std::shared_ptr<N> get() const { return node_sp; }
+
+    bool operator<(const Node& other) const {
+      return *this < *other;
+    }
+    friend bool operator==(const Node& lhs, const Node& rhs) {
+      return *lhs.node_sp == *rhs.node_sp;
+    }
+
+   private:
+    std::shared_ptr<N> node_sp;
+  };
+
 
   struct NodeCmp {
+    bool operator() (const Node& lhs, const Node& rhs) const {
+      return *lhs < *rhs;
+    }
+  };
+
+
+  struct PtrCmp {
     bool operator() (const std::shared_ptr<N> lhs, const std::shared_ptr<N> rhs) const {
       return *lhs < *rhs;
     }
@@ -90,34 +117,6 @@ class Graph {
       (void) lhs;
       (void) rhs;
       return lhs.index_ == rhs.index_;
-//      if(lhs.index_ != lhs.edges_.end() && rhs.index_ != rhs.edges_.end()) {
-//        return (*lhs == *rhs);
-//      } else if (lhs.index_ == lhs.edges_.end() && rhs.index_ == rhs.edges_.end()) {
-//        return true;
-//      } else {
-//        return false;
-//      }
-
-
-
-//      N src1;
-//      N dst1;
-//      E weight1;
-//      std::tie(src1, dst1, weight1) = *lhs;
-//      N src2;
-//      N dst2;
-//      E weight2;
-//      std::tie(src2, dst2, weight2) = *rhs;
-//      std::cout<<src1 << " " << dst1 << " " << weight1 <<std::endl;
-//      std::cout<<src2 << " " << dst2 << " " << weight2 <<std::endl;
-
-
-      //return (*lhs == *rhs);
-
-
-//      Edge lhs_edge = *lhs;
-//      Edge rhs_edge = *rhs;
-//      return (*lhs_edge.src.lock() == *rhs_edge.src.lock() && *lhs_edge.dst.lock() == *rhs_edge.dst.lock() && *lhs_edge.weight == *rhs_edge.weight);
     }
 
     friend bool operator!=(const const_iterator& lhs, const const_iterator& rhs) {
@@ -125,63 +124,61 @@ class Graph {
     }
 
    private:
-    explicit const_iterator(const std::set<Edge, EdgeCmp> edges, typename std::set<Edge, EdgeCmp>::iterator index):  index_{index}, edges_{edges} {}
+    explicit const_iterator(typename std::set<Edge, EdgeCmp>::iterator index):  index_{index} {}
     typename std::set<Edge, EdgeCmp>::iterator index_;
-    const std::set<Edge, EdgeCmp> edges_;
-
 
     friend class Graph;
   };
 
 //####################################  METHODS ########################################
   bool InsertNode(const N& val) {
-    if(node_map.find(val) != node_map.end()) {
+    if(node_set.find(Node{val}) != node_set.end()) {
       return false;
     }
-    N val_copy = val;
-    std::shared_ptr<N> node = std::make_shared<N>(val_copy);
-    //node_set.emplace(val);
-    node_map.emplace(val_copy, node);
+    Node new_node{val};
+    node_set.insert(new_node);
 
     // creates empty edge set for edges from this node
     std::set<Edge, EdgeCmp> edge_set;
-    edge_map[node] = edge_set;
+    edge_map[new_node.get()] = edge_set;
     return true;
   }
   bool InsertEdge(const N& src, const N& dst, const E& w) {
     // shared_ptr to tuple?
-    std::shared_ptr<N> src_sp = node_map.find(src)->second;
-    std::shared_ptr<N> dst_sp = node_map.find(dst)->second;
+    std::shared_ptr<N> src_sp = node_set.find(Node{src})->get();
+    std::shared_ptr<N> dst_sp = node_set.find(Node{dst})->get();
     Edge e{src_sp,dst_sp,std::make_shared<E>(w)};
 
     //std::cout << "Inserting Edge: " << *src_sp << " " << *dst_sp << " " << w << "\n";
-    std::set<Edge, EdgeCmp>& edge_set = edge_map[src_sp];
-    for(const Edge& edge : edge_set) {
+    std::set<Edge, EdgeCmp>& node_to_edge = edge_map[src_sp];
+    for(const Edge& edge : node_to_edge) {
       if(*edge.src.lock() == src && *edge.dst.lock() == dst && *edge.weight == w) {
         return false;
       }
     }
+    node_to_edge.insert(e);
     edge_set.insert(e);
     return true;
   }
 
   bool DeleteNode(const N& node) {
-    if (node_map.find(node) == node_map.end()) {
+    if (node_set.find(Node{node}) == node_set.end()) {
       return false;
     }
-    std::shared_ptr<N> node_sp = node_map.find(node)->second;
+    Node to_remove = *node_set.find(Node{node});
+    std::shared_ptr<N> node_sp = to_remove.get();
     // TODO: is this needed?
-    node_sp.reset();
-    node_map.erase(node);
+    //node_sp.reset();
+    node_set.erase(to_remove);
     return true;
   }
 
   bool IsNode(const N& val) {
-    return (node_map.find(val) != node_map.end());
+    return (node_set.find(val) != node_set.end());
   }
 
   bool IsConnected(const N& src, const N& dst) {
-    std::shared_ptr<N> src_sp = node_map[src];
+    std::shared_ptr<N> src_sp = node_set.find(Node{src})->get();
     std::set<Edge, EdgeCmp> edge_set = edge_map.find(src_sp)->second;
     for(const auto &[from, to, weight] : edge_set) {
       if(dst == *to.lock()) {
@@ -193,14 +190,14 @@ class Graph {
 
   std::vector<N> GetNodes() {
     std::vector<N> node_vector;
-    for(const auto &[fir,sec] : node_map) {
-      node_vector.push_back(*sec);
+    for(const Node& node : node_set) {
+      node_vector.push_back(*node);
     }
     return node_vector;
   }
 
   std::vector<N> GetConnected(const N& src) {
-    std::shared_ptr<N> src_sp = node_map[src];
+    std::shared_ptr<N> src_sp = node_set.find(Node{src})->get();
     // TODO: this set automatically orders?
     std::set<N> seen_nodes;
     //std::set<Edge,
@@ -212,7 +209,7 @@ class Graph {
   }
 
   std::vector<E> GetWeights(const N& src, const N& dst) {
-    std::shared_ptr<N> src_sp = node_map[src];
+    std::shared_ptr<N> src_sp = node_set.find(Node{src})->get();
     std::vector<E> weights;
 //    // TODO: this set automatically orders?
 //    std::multiset<E> weights_set;
@@ -226,8 +223,11 @@ class Graph {
 
   void Clear() {
     // TODO: Do we need to .reset() any pointers?
-    node_map.erase(node_map.begin(), node_map.end());
-    edge_map.erase(edge_map.begin(), edge_map.end());
+    node_set.clear();
+    edge_set.clear();
+    edge_map.clear();
+//    node_map.erase(node_map.begin(), node_map.end());
+//    edge_map.erase(edge_map.begin(), edge_map.end());
 //    for(auto it = node_map.begin(); it != node_map.end(); ++it) {
 //      // it->second.reset();
 //      it = node_map.erase(it);
@@ -239,14 +239,10 @@ class Graph {
 
 //################################ FRIENDS ######################################
   friend std::ostream& operator<<(std::ostream& os, const gdwg::Graph<N, E>& g) {
-    std::set<std::shared_ptr<N>, NodeCmp> node_set;
-    for(const auto &[fir,sec] : g.node_map) {
-      node_set.insert(sec);
-    }
-    for(std::shared_ptr<N> node : node_set) {
+    for(const Node& node : g.node_set) {
       std::cout << *node << " (\n";
-      std::set<Edge, EdgeCmp> edge_set = g.edge_map.find(node)->second;
-      for(const auto &[src, dst, weight] : edge_set) {
+      std::set<Edge, EdgeCmp> node_to_edge = g.edge_map.find(node.get())->second;
+      for(const auto &[src, dst, weight] : node_to_edge) {
         std::cout << "  " << *dst.lock() << " | " << *weight << "\n";
       }
       std::cout << ")\n";
@@ -259,37 +255,32 @@ class Graph {
   // TODO: can all_edges be references
   const_iterator begin() const { return cbegin(); }
   const_iterator cbegin() const {
-    std::set<Edge, EdgeCmp> all_edges = GetEdges();
-    return const_iterator{all_edges, all_edges.begin()};
+    return const_iterator{edge_set.begin()};
   }
   const_iterator end() const { return cend(); }
   const_iterator cend() const {
-    std::set<Edge, EdgeCmp> all_edges = GetEdges();
-    return const_iterator{all_edges, all_edges.end()};
+    return const_iterator{edge_set.end()};
   }
 //################################ HELPERS ######################################
-  std::set<Edge, EdgeCmp> GetEdges() const {
-    std::set<Edge, EdgeCmp> edges;
-    for (const auto &[node, node_ptr] : node_map) {
-      // cant use edge_map[node_ptr] or else const qualifier isnt satisfied
-      const std::set<Edge, EdgeCmp>& cur_set = edge_map.find(node_ptr)->second;
-      edges.insert(cur_set.begin(), cur_set.end());
-    }
-//  prints all edges correctly
-//    for(Edge e : edges) {
-//      std::cout<<*e.src.lock() << " " << *e.dst.lock() << " " << *e.weight << std::endl;
-//    }
-//    std::cout<<"\n";
-    return edges;
-  }
+
+//  std::shared_ptr<N> GetNode() const {
+//    return std::find_if(node_set.begin(), node_set.end(), [](std::shared_ptr<N> node_sp) -> bool {
+//      return *node_sp.GetNode
+//    })
+//  }
  private:
-  // maps input nodes into our heap-allocated equivalent
-  std::map<N, std::shared_ptr<N>> node_map;
+  std::set<Node, NodeCmp> node_set;
+//  // maps input nodes into our heap-allocated equivalent
+//  cant do this because we are storing a copy of N
+//  std::map<N, std::shared_ptr<N>> node_map;
+  std::set<Edge, EdgeCmp> edge_set;
   std::map<std::shared_ptr<N>, std::set<Edge, EdgeCmp>> edge_map;
 };
 
 }  // namespace gdwg
 
-#include "assignments/dg/graph.tpp"
+
+
+#include "assignments/dg/graphtpp.cpp"
 
 #endif  // ASSIGNMENTS_DG_GRAPH_H_
