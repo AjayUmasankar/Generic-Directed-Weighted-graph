@@ -21,9 +21,6 @@ bool Graph<N, E>::InsertNode(const N& val) {
 }
 
 
-
-
-
 template <typename N, typename E>
 bool Graph<N, E>::InsertEdge(const N& src, const N& dst, const E& w) {
   if (!IsNode(src) || !IsNode(dst)) {
@@ -46,6 +43,7 @@ bool Graph<N, E>::InsertEdge(const N& src, const N& dst, const E& w) {
   return true;
 }
 
+
 template <typename N, typename E>
 bool Graph<N, E>::DeleteNode(const N& node) {
   if (node_set.find(Node{node}) == node_set.end()) {
@@ -58,6 +56,7 @@ bool Graph<N, E>::DeleteNode(const N& node) {
   node_set.erase(to_remove);
   return true;
 }
+
 
 template <typename N, typename E>
 bool Graph<N, E>::IsNode(const N& val) {
@@ -77,6 +76,7 @@ bool Graph<N, E>::IsConnected(const N& src, const N& dst) {
   return false;
 }
 
+
 template <typename N, typename E>
 std::vector<N> Graph<N, E>::GetNodes() {
   std::vector<N> node_vector;
@@ -85,7 +85,6 @@ std::vector<N> Graph<N, E>::GetNodes() {
   }
   return node_vector;
 }
-
 
 
 template <typename N, typename E>
@@ -122,8 +121,15 @@ std::vector<E> Graph<N, E>::GetWeights(const N& src, const N& dst) {
   return weights;
 }
 
+
 template <typename N, typename E>
 bool Graph<N,E>::Replace(const N& oldData, const N& newData) {
+  if (node_set.find(oldData) == node_set.end()) {
+    throw std::runtime_error("Cannot call Graph::Replace on a node that doesn't exist");
+  } else if (node_set.find(newData) != node_set.end()) {
+    return false;
+  }
+
   InsertNode(newData);
   std::shared_ptr<N> src_sp = node_set.find(Node{oldData})->get();
   std::set<Edge, EdgeCmp> old_edges = edge_map.find(src_sp)->second;

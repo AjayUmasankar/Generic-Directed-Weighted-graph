@@ -12,7 +12,7 @@ https://github.com/catchorg/Catch2/blob/master/docs/tutorial.md
 // TODO: GetNodes increasing order of node??
 // TODO: GetConnected ambiguity (include only outnodes or innodes?)
 
-SCENARIO("Default Graph constructor and basic methods") {
+SCENARIO("Default Graph constructor and basic methods work") {
   GIVEN("Default Graph constructor Graph<string, int>") {
     gdwg::Graph<std::string, int> g;
 
@@ -203,7 +203,7 @@ SCENARIO("Graph constructor with vector of tuples work") {
   }
 }
 
-SCENARIO("Graph constructor with initializer lists") {
+SCENARIO("Graph constructor with initializer lists work") {
   GIVEN("Graph is constructed with initializer list of chars") {
     gdwg::Graph<char, std::string> g{'c', 's', 'e'};
     THEN("Graph is constructed with the nodes as expected") {
@@ -231,7 +231,7 @@ SCENARIO("Graph constructor with initializer lists") {
   }
 }
 
-SCENARIO("Graph copy constructor/assignment works") {
+SCENARIO("Graph copy constructor/assignment work") {
   GIVEN("Graph constructed with initializer list of chars") {
     gdwg::Graph<char, std::string> g{'c', 's', 'e'};
     WHEN("Copy constructor is used") {
@@ -327,7 +327,7 @@ SCENARIO("Graph copy constructor/assignment works") {
   }
 }
 
-SCENARIO("Graph move constructor/assignment works") {
+SCENARIO("Graph move constructor/assignment work") {
   GIVEN("Vector of tuples<string, string, int>") {
     std::string s1{"Hello"};
     std::string s2{"how"};
@@ -369,6 +369,73 @@ SCENARIO("Graph move constructor/assignment works") {
         REQUIRE(cp.GetConnected(s2)[0] == s3);
 
         REQUIRE(g.isEmpty());
+      }
+    }
+  }
+}
+
+SCENARIO("Graph Delete Node works") {
+  GIVEN("Graph with some nodes in it") {
+    gdwg::Graph<int, int> g;
+    REQUIRE(g.InsertNode(0) == true);
+    REQUIRE(g.InsertNode(1) == true);
+    REQUIRE(g.InsertNode(2) == true);
+    REQUIRE(g.InsertNode(3) == true);
+    REQUIRE(g.numNodes() == 4);
+    WHEN("gdwg::Graph::DeleteNode is used to remove existing node") {
+      REQUIRE(g.DeleteNode(0) == true);
+      REQUIRE(g.IsNode(0) == false);
+      REQUIRE(g.numNodes() == 3);
+      for (int i = 1; i < 4; i++)
+        REQUIRE(g.IsNode(i));
+    }
+    WHEN("gdwg::Graph::DeleteNode is used to remove non-existing nodes") {
+      REQUIRE(g.IsNode(69) == false);
+      REQUIRE(g.DeleteNode(69) == false);
+      REQUIRE(g.numNodes() == 4);
+      for (int i = 0; i < 4; ++i)
+        REQUIRE(g.IsNode(i));
+    }
+  }
+}
+
+SCENARIO("Graph Replace Node works") {
+  GIVEN("Graph with some nodes") {
+    gdwg::Graph<int, int> g;
+    int num = 5;
+    for (int i = 0; i < num; ++i)
+      REQUIRE(g.InsertNode(i) == true);
+    REQUIRE(g.numNodes() == num);
+    WHEN("gdwg::Graph::Replace is used with existing node and non-existing new node") {
+      REQUIRE(g.Replace(1, num) == true);
+      THEN("Existing node is replaced with new data") {
+        REQUIRE(g.numNodes() == num);
+        REQUIRE(g.IsNode(num) == true);
+        REQUIRE(g.IsNode(1) == false);
+      }
+    }
+    WHEN("gdwg::Graph::Replace is used with non-existing old node") {
+      THEN("Exception is thrown and graph is unchanged") {
+        CHECK_THROWS_WITH(g.Replace(num, num), "Cannot call Graph::Replace on a node that doesn't exist");
+        REQUIRE(g.numNodes() == num);
+        for (int i = 0; i < num; ++i)
+          REQUIRE(g.IsNode(i) == true);
+      }
+    }
+    WHEN("gdwg::Graph::Replace is used with both different existing nodes") {
+      THEN("Graph is unchanged") {
+        REQUIRE(g.Replace(0, 1) == false);
+        REQUIRE(g.numNodes() == num);
+        for (int i = 0; i < num; ++i)
+          REQUIRE(g.IsNode(i) == true);
+      }
+    }
+    WHEN("gdwg::Graph::Replace is used with same existing nodes") {
+      THEN("Graph is unchanged") {
+        REQUIRE(g.Replace(0, 0) == false);
+        REQUIRE(g.numNodes() == num);
+        for (int i = 0; i < num; ++i)
+          REQUIRE(g.IsNode(i) == true);
       }
     }
   }
