@@ -40,6 +40,7 @@ int main() {
     std::cout << "hi" << std::endl;
   }
 
+
 // *** MINE **** //
   gdwg::Graph<int, int> g3;
   g3.InsertNode(1);
@@ -60,14 +61,24 @@ int main() {
   g3.InsertEdge(6,2,5);
   std::cout << "Printing g3" << std::endl << g3;
 
-  for(auto it = g3.begin(); it != g3.end(); ++it) {
+  // manual iterator test
+//  for(auto it = g3.begin(); it != g3.end(); ++it) {
+//    std::cout << std::get<0>(*it) << " -> " << std::get<1>(*it) << " (weight " << std::get<2>(*it) << ")\n" << std::endl;
+//  }
 
-    std::cout << std::get<0>(*it) << " -> " << std::get<1>(*it) << " (weight " << std::get<2>(*it) << ")\n" << std::endl;
-  }
+// deletenode test
+//  TODO How does this even work correctly with my current DeleteNode implementation
+//  g3.DeleteNode(1);
+//  g3.InsertNode(1);
+//  std::cout << "Printing g3: " << g3 << "\n";
 
-  g3.DeleteNode(1);
-  g3.InsertNode(1);
-  std::cout << "Printing g3: " << g3 << "\n";
+  g3.Replace(1, 7);
+  std::cout << "printing g3 " << std::endl << g3;
+
+
+  // find test
+//  auto it = g3.find(2,4,2);
+//      std::cout << std::get<0>(*it) << " -> " << std::get<1>(*it) << " (weight " << std::get<2>(*it) << ")\n" << std::endl;
 
 // *** END **** //
 }

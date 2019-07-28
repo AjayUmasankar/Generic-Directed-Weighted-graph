@@ -204,6 +204,17 @@ class Graph {
     return true;
   }
 
+  bool Replace(const N& oldData, const N& newData) {
+    InsertNode(newData);
+    std::shared_ptr<N> src_sp = node_set.find(Node{oldData})->get();
+    std::set<Edge, EdgeCmp> old_edges = edge_map.find(src_sp)->second;
+    for (const auto& Edge : old_edges) {
+      InsertEdge(newData, *Edge.dst.lock(), *Edge.weight);
+    }
+    DeleteNode(oldData);
+    return true;
+  }
+
   bool IsNode(const N& val) {
     return (node_set.find(val) != node_set.end());
   }
@@ -268,6 +279,32 @@ class Graph {
 //    }
   }
 
+//############ Iterator Methods #################
+
+  const_iterator find(const N& src, const N& dst, const E& weight) {
+    //std::tuple<N&, N&, E&> = std::tie(src, dst, weight);
+    for(auto it = cbegin(); it != cend(); ++it) {
+      if (*it == std::tie(src, dst, weight)) {
+        return it;
+      }
+    }
+    return cend();
+  }
+
+//  const_iterator erase(const_iterator it) {
+//
+//  }
+
+  // TODO: can all_edges be references
+  const_iterator begin() const { return cbegin(); }
+  const_iterator cbegin() const {
+    return const_iterator{edge_map.cbegin()};
+  }
+  const_iterator end() const { return cend(); }
+  const_iterator cend() const {
+    return const_iterator{edge_map.cend()};
+  }
+
 //################################ FRIENDS ######################################
   friend std::ostream& operator<<(std::ostream& os, const gdwg::Graph<N, E>& g) {
     for(const Node& node : g.node_set) {
@@ -281,17 +318,6 @@ class Graph {
     return os;
   }
 
-//################################ ITERATORS ######################################
-
-  // TODO: can all_edges be references
-  const_iterator begin() const { return cbegin(); }
-  const_iterator cbegin() const {
-    return const_iterator{edge_map.cbegin()};
-  }
-  const_iterator end() const { return cend(); }
-  const_iterator cend() const {
-    return const_iterator{edge_map.cend()};
-  }
 //################################ HELPERS ######################################
 
 //  std::shared_ptr<N> GetNode() const {
