@@ -59,6 +59,7 @@ int main() {
   g3.InsertEdge(6,3,10);
   g3.InsertEdge(3,6,-8);
   g3.InsertEdge(6,2,5);
+
   std::cout << "Printing g3" << std::endl << g3;
 
   // manual iterator test
@@ -66,15 +67,13 @@ int main() {
 //    std::cout << std::get<0>(*it) << " -> " << std::get<1>(*it) << " (weight " << std::get<2>(*it) << ")\n" << std::endl;
 //  }
 
-// deletenode test
-//  TODO How does this even work correctly with my current DeleteNode implementation
-//  g3.DeleteNode(1);
-//  g3.InsertNode(1);
-//  std::cout << "Printing g3: " << g3 << "\n";
 
-  g3.Replace(1, 7);
-  std::cout << "printing g3 " << std::endl << g3;
-
+//  g3.Replace(1, 7);
+  std::cout << "printing g3 " << g3;
+  std::cout << g3.numEdges() << std::endl;
+  g3.DeleteNode(1);
+  std::cout << g3.numEdges() << std::endl;
+  std::cout << g3 << std::endl;
 
   // find test
 //  auto it = g3.find(2,4,2);

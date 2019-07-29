@@ -58,6 +58,9 @@ class Graph {
     std::weak_ptr<N> src;
     std::weak_ptr<N> dst;
     std::shared_ptr<E> weight;
+    friend bool operator==(const Edge& lhs, const Edge& rhs) {
+      return *lhs.src.lock() == *rhs.src.lock() && *lhs.dst.lock() == *rhs.dst.lock() && *lhs.weight == *rhs.weight;
+    }
   };
   class Node {
    public:
@@ -232,15 +235,40 @@ class Graph {
 
   const_iterator erase(const_iterator it) {
     // TODO edge case of removing iterator to last element maybe
-    N src = std::get<0>(*it);
-    N dst = std::get<1>(*it);
-    E weight = std::get<2>(*it);
-    ++it;
-    N src_next = std::get<0>(*it);
-    N dst_next = std::get<1>(*it);
-    E weight_next = std::get<2>(*it);
+    if(it == cend()) {
+      return cend();
+    }
+    N src;
+    N dst;
+    E weight;
+    std::tie(src, dst, weight) = *it++;
+    if(it == cend()) {
+      return it;
+    }
+    N src_next;
+    N dst_next;
+    E weight_next;
+    std::tie(src_next, dst_next, weight_next) = *it;
     erase(src, dst, weight);
     return find(src_next, dst_next, weight_next);
+  }
+
+  bool erase(const N& src, const N& dst, const E& w) {
+    std::shared_ptr<N> src_sp = node_set.find(Node{src})->get();
+    auto it = edge_map.find(src_sp);
+    if(it == edge_map.end()) {
+      return false;
+    }
+    bool erased = false;
+    std::set<Edge, EdgeCmp>& edge_set = it->second;
+    for (const auto& edge : edge_set) {
+      if(*edge.dst.lock() == dst && *edge.weight == w) {
+        edge_set.erase(edge);
+        erased = true;
+        break;
+      }
+    }
+    return erased;
   }
 
   // TODO: can all_edges be references

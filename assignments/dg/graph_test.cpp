@@ -381,13 +381,18 @@ SCENARIO("Graph Delete Node works") {
     REQUIRE(g.InsertNode(1) == true);
     REQUIRE(g.InsertNode(2) == true);
     REQUIRE(g.InsertNode(3) == true);
+    REQUIRE(g.InsertEdge(0,1,0) == true);
+    REQUIRE(g.InsertEdge(2,0,0) == true);
+    REQUIRE(g.InsertEdge(0,2,0) == true);
     REQUIRE(g.numNodes() == 4);
     WHEN("gdwg::Graph::DeleteNode is used to remove existing node") {
       REQUIRE(g.DeleteNode(0) == true);
       REQUIRE(g.IsNode(0) == false);
       REQUIRE(g.numNodes() == 3);
+      REQUIRE(g.numEdges() == 0);
       for (int i = 1; i < 4; i++)
         REQUIRE(g.IsNode(i));
+
     }
     WHEN("gdwg::Graph::DeleteNode is used to remove non-existing nodes") {
       REQUIRE(g.IsNode(69) == false);
@@ -510,12 +515,11 @@ SCENARIO("Methods on more complex sample graphs work as expected") {
       REQUIRE(g.GetNodes().size() == 0);
     }
     // TODO: const_iterator find
-
-    //    WHEN("Erase is called on an existing edge") {
-    //      REQUIRE(g.IsConnected(5,2));
-    //      REQUIRE(g.erase(5,2,7));
-    //      REQUIRE_FALSE(g.IsConnected(5,2));
-    //    }
+        WHEN("Erase is called on an existing edge") {
+          REQUIRE(g.IsConnected(5,2));
+          REQUIRE(g.erase(5,2,7));
+          REQUIRE_FALSE(g.IsConnected(5,2));
+        }
 
     // TODO: const_iterator erase
     // TODO: lots of iterator methods

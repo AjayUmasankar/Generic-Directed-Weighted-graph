@@ -32,13 +32,13 @@ bool Graph<N, E>::InsertEdge(const N& src, const N& dst, const E& w) {
   Edge e{src_sp,dst_sp,std::make_shared<E>(w)};
 
   //std::cout << "Inserting Edge: " << *src_sp << " " << *dst_sp << " " << w << "\n";
-  std::set<Edge, EdgeCmp>& node_to_edge = edge_map[src_sp];
-  for(const Edge& edge : node_to_edge) {
+  std::set<Edge, EdgeCmp>& edge_set = edge_map[src_sp];
+  for(const Edge& edge : edge_set) {
     if(*edge.src.lock() == src && *edge.dst.lock() == dst && *edge.weight == w) {
       return false;
     }
   }
-  node_to_edge.insert(e);
+  edge_set.insert(e);
   //edge_set.insert(e);
   return true;
 }
@@ -51,9 +51,19 @@ bool Graph<N, E>::DeleteNode(const N& node) {
   }
   Node to_remove = *node_set.find(Node{node});
   std::shared_ptr<N> node_sp = to_remove.get();
-  // TODO: is this needed?
-  //node_sp.reset();
+  for (auto it = edge_map.begin(); it != edge_map.end(); ++it) {
+    std::set<Edge,EdgeCmp>& edge_set = it->second;
+    for(auto edge_it = edge_set.begin(); edge_it != edge_set.end();) {
+      if (*edge_it->dst.lock() == node) {
+        edge_it = edge_set.erase(edge_it);
+      } else {
+        ++edge_it;
+      }
+    }
+
+  }
   node_set.erase(to_remove);
+  edge_map.erase(node_sp);
   return true;
 }
 
