@@ -76,6 +76,9 @@ bool Graph<N, E>::IsNode(const N& val) {
 
 template <typename N, typename E>
 bool Graph<N, E>::IsConnected(const N& src, const N& dst) {
+  if(!IsNode(src) || !IsNode(dst)) {
+    throw std::runtime_error("Cannot call Graph::IsConnected if src or dst node don't exist in the graph");
+  }
   std::shared_ptr<N> src_sp = node_set.find(Node{src})->get();
   std::set<Edge, EdgeCmp> edge_set = edge_map.find(src_sp)->second;
   for(const auto &[from, to, weight] : edge_set) {
@@ -149,5 +152,4 @@ bool Graph<N,E>::Replace(const N& oldData, const N& newData) {
   DeleteNode(oldData);
   return true;
 }
-
 }

@@ -133,11 +133,17 @@ class Graph {
     pointer operator->() const { return &(operator*()); }
 
     const_iterator operator++() {
-      index_++;
+      ++index_;
       if(index_ == index_outer_->second.cend()) {
-        index_outer_++;
-        if(index_outer_->second.empty()) {
-          index_outer_++;
+        // if the Node's set of outgoing edges is empty, keep going to next node
+        while(++index_outer_ == index_outer_end_ || (index_outer_)->second.empty()) {
+          std::cout << "HELLO" << std::endl;
+          // or else keeps looping forever
+          if (index_outer_ == index_outer_end_) {
+            index_ = (--index_outer_)->second.cend();
+            ++index_outer_;
+            return *this;
+          }
         }
         index_ = index_outer_->second.cbegin();
       }
@@ -152,11 +158,14 @@ class Graph {
 
     const_iterator operator--() {
       if(index_ == index_outer_->second.cbegin()) {
-        index_outer_--;
-        index_ = index_outer_->second.cbegin();
+        while(--index_outer_->second.empty()) {
+          if (index_outer_ == index_outer_begin_) { return *this; }
+        }
+        index_ = index_outer_->second.cend();
       } else {
-        index_--;
+        --index_;
       }
+//
       return *this;
     }
     const_iterator operator--(int) {
@@ -166,27 +175,13 @@ class Graph {
     }
 
     friend bool operator==(const const_iterator& lhs, const const_iterator& rhs) {
-      // TODO: Need to check both iterators have same set of edges as well?
-      // ^ in the case of comparing iterators from two different graphs
-      (void) lhs;
-      (void) rhs;
-//      if (lhs.index_outer_ == rhs.index_outer_) {
-//        if(lhs.index_ == lhs.index_outer_->second.cend() && rhs.index_ == rhs.index_outer_->second.cend()) {
-//          return true;
-//        } else if (lhs.index_ == rhs.index_) {
-//          return true;
-//        }
+      // TODO comparing iterators of same graph only?
+      return lhs.index_outer_ == rhs.index_outer_ && lhs.index_ == rhs.index_;
+//      if(lhs.index_outer_ == lhs.index_outer_end_ && rhs.index_outer_ == rhs.index_outer_end_) {
+//        return true;
+//      } else {
+//        return lhs.index_outer_ == rhs.index_outer_ && lhs.index_ == rhs.index_;
 //      }
-//      return false;
-
-
-      //std::cout << "entrance" << std::endl;
-      bool value = lhs.index_outer_ == rhs.index_outer_;
-      //std::cout << "exit " << value << std::endl;
-
-      return value;
-
-
     }
 
     friend bool operator!=(const const_iterator& lhs, const const_iterator& rhs) {
@@ -194,13 +189,25 @@ class Graph {
     }
 
    private:
-    explicit const_iterator(typename std::map<std::shared_ptr<N>, std::set<Edge, EdgeCmp>, PtrCmp>::const_iterator index_outer) : index_outer_ {index_outer}  {
-      index_ = index_outer_->second.cbegin();
+    explicit const_iterator(typename std::map<std::shared_ptr<N>, std::set<Edge, EdgeCmp>, PtrCmp>::const_iterator index_outer, typename std::map<std::shared_ptr<N>, std::set<Edge, EdgeCmp>, PtrCmp>::const_iterator index_outer_begin, typename std::map<std::shared_ptr<N>, std::set<Edge, EdgeCmp>, PtrCmp>::const_iterator index_outer_end) : index_outer_ {index_outer}, index_outer_begin_{index_outer_begin}, index_outer_end_{index_outer_end} {
+      if(index_outer_begin_ == index_outer_end_) {
+        // empty
+      } else if (index_outer_ == index_outer_end_) {
+        // cend is sent in, so set end indexes
+        index_ = (--index_outer_)->second.cend();
+        ++index_outer_;
+      } else if (index_outer_ == index_outer_begin_) {
+        index_ = index_outer_->second.cbegin();
+      }
+
     }
     typename std::map<std::shared_ptr<N>, std::set<Edge, EdgeCmp>, PtrCmp>::const_iterator index_outer_;
+    typename std::map<std::shared_ptr<N>, std::set<Edge, EdgeCmp>, PtrCmp>::const_iterator index_outer_begin_;
+    typename std::map<std::shared_ptr<N>, std::set<Edge, EdgeCmp>, PtrCmp>::const_iterator index_outer_end_;
     typename std::set<Edge, EdgeCmp>::const_iterator index_;
 
     friend class Graph;
+
   };
 
 // methods
@@ -236,7 +243,7 @@ class Graph {
   const_iterator erase(const_iterator it) {
     // TODO edge case of removing iterator to last element maybe
     if(it == cend()) {
-      return cend();
+      return it;
     }
     N src;
     N dst;
@@ -273,13 +280,17 @@ class Graph {
 
   // TODO: can all_edges be references
   const_iterator begin() const { return cbegin(); }
-  const_iterator cbegin() const {
-    return const_iterator{edge_map.cbegin()};
-  }
+  const_iterator cbegin() const { return const_iterator{edge_map.cbegin(), edge_map.cbegin(), edge_map.cend()};  }
   const_iterator end() const { return cend(); }
   const_iterator cend() const {
-    return const_iterator{edge_map.cend()};
+    return const_iterator{edge_map.cend(), edge_map.cbegin(), edge_map.cend()};
   }
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+  // If you want const reverse iterators (hint: you do), define these.
+  const_reverse_iterator rbegin() const { return crbegin(); }
+  const_reverse_iterator rend() const { return crend(); }
+  const_reverse_iterator crbegin() const { return const_reverse_iterator{cend()}; }
+  const_reverse_iterator crend() const { return const_reverse_iterator{cbegin()}; }
 
 // friends
   Graph<N, E>& operator=(const Graph<N, E>& other) {
@@ -287,7 +298,7 @@ class Graph {
       if (this != &other)
         then do the bottom?
      */
-    node_set = other.node_map;
+    node_set = other.node_set;
     edge_map = other.edge_map;
     return *this;
   }
@@ -297,7 +308,7 @@ class Graph {
       if (this != &other)
         then do the bottom?
      */
-    node_set = std::move(other.node_map);
+    node_set = std::move(other.node_set);
     edge_map = std::move(other.edge_map);
     other.Clear();
     return *this;

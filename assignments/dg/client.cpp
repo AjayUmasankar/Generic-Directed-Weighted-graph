@@ -37,7 +37,6 @@ int main() {
 
   for (const auto& [from, to, weight] : g) {
     std::cout << from << " -> " << to << " (weight " << weight << ")\n" << std::endl;
-    std::cout << "hi" << std::endl;
   }
 
 
@@ -62,18 +61,18 @@ int main() {
 
   std::cout << "Printing g3" << std::endl << g3;
 
-  // manual iterator test
-//  for(auto it = g3.begin(); it != g3.end(); ++it) {
-//    std::cout << std::get<0>(*it) << " -> " << std::get<1>(*it) << " (weight " << std::get<2>(*it) << ")\n" << std::endl;
+//  for (const auto& [from, to, weight] : g3) {
+//    std::cout << from << " -> " << to << " (weight " << weight << ")\n" << std::endl;
 //  }
 
+  // manual iterator test
+  for(auto it = g3.begin(); it != g3.end(); ++it) {
+    std::cout << std::get<0>(*it) << " -> " << std::get<1>(*it) << " (weight " << std::get<2>(*it) << ")\n" << std::endl;
+  }
+  std::cout << "FINISHED SUCCESS\n";
 
-//  g3.Replace(1, 7);
-  std::cout << "printing g3 " << g3;
-  std::cout << g3.numEdges() << std::endl;
-  g3.DeleteNode(1);
-  std::cout << g3.numEdges() << std::endl;
-  std::cout << g3 << std::endl;
+
+
 
   // find test
 //  auto it = g3.find(2,4,2);
