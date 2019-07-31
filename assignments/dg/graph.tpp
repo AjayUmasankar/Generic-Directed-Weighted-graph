@@ -60,7 +60,6 @@ bool Graph<N, E>::DeleteNode(const N& node) {
         ++edge_it;
       }
     }
-
   }
   node_set.erase(to_remove);
   edge_map.erase(node_sp);
@@ -152,4 +151,41 @@ bool Graph<N,E>::Replace(const N& oldData, const N& newData) {
   DeleteNode(oldData);
   return true;
 }
+
+
+template <typename N, typename E>
+void Graph<N,E>::MergeReplace(const N& oldData, const N& newData) {
+  if (!IsNode(oldData) || !IsNode(newData)) {
+    throw std::runtime_error("Cannot call Graph::MergeReplace on old or new data if they don't exist in the graph");
+  }
+
+  // get node for olddata
+  std::shared_ptr<N> src_node = node_set.find(Node{oldData})->get();
+  std::shared_ptr<N> dest_node = node_set.find(Node{newData})->get();
+
+  // get outgoing edges of src_node (src_node -> other_node)
+  // replace src_node with dest node and insert new edge into graph
+  std::set<Edge, EdgeCmp> src_edges = edge_map.find(src_node)->second;
+  for (const auto& e : src_edges) {
+    InsertEdge(newData, *e.dst.lock(), *e.weight);
+  }
+
+  // get incoming edges of src_node (other_node -> src_node)
+  // replace src_node with dest node and insert new edge into graph
+  for (auto it = edge_map.begin(); it != edge_map.end(); ++it) {
+    std::set<Edge,EdgeCmp>& edge_set = it->second;
+    for (auto edge_it = edge_set.begin(); edge_it != edge_set.end();) {
+      if (*edge_it->src.lock() != newData && *edge_it->dst.lock() == oldData) {
+        InsertEdge(*edge_it->src.lock(), newData, *edge_it->weight);
+        edge_it = edge_set.erase(edge_it);
+      } else {
+        ++edge_it;
+      }
+    }
+  }
+  // delete oldData and its edges
+  DeleteNode(oldData);
+}
+
+
 }

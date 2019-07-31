@@ -220,6 +220,7 @@ class Graph {
   std::vector<N> GetConnected(const N& src);
   std::vector<E> GetWeights(const N& src, const N& dst);
   bool Replace(const N& oldData, const N& newData);
+  void MergeReplace(const N& oldData, const N& newData);
 
 
   void Clear() {

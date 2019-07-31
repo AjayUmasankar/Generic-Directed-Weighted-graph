@@ -17,15 +17,21 @@ SCENARIO("Default Graph constructor and basic methods work") {
     gdwg::Graph<std::string, int> g;
 
     WHEN("gdwg::Graph::isEmpty is used to check state of graph") {
-      THEN("Result is true (graph is empty)") { REQUIRE(g.isEmpty() == true); }
+      THEN("Result is true (graph is empty)") {
+        REQUIRE(g.isEmpty() == true);
+      }
     }
 
     WHEN("gdwg::Graph::numNodes is used to check number of nodes") {
-      THEN("Result is 0") { REQUIRE(g.numNodes() == 0); }
+      THEN("Result is 0") {
+        REQUIRE(g.numNodes() == 0);
+      }
     }
 
     WHEN("gdwg::Graph::numEdges is used to check number of edges") {
-      THEN("Result is 0") { REQUIRE(g.numEdges() == 0); }
+      THEN("Result is 0") {
+        REQUIRE(g.numEdges() == 0);
+      }
     }
 
     WHEN("gdwg::Graph::InsertNode is used to insert nodes") {
@@ -118,9 +124,7 @@ SCENARIO("Default Graph constructor and basic methods work") {
       REQUIRE(g.IsNode(node1) == false);
       REQUIRE(g.IsNode(node2) == false);
       THEN("Exception is thrown and graph is unchanged") {
-        CHECK_THROWS_WITH(
-            g.InsertEdge(node1, node2, weight),
-            "Cannot call Graph::InsertEdge when either src or dst node does not exist");
+        CHECK_THROWS_WITH(g.InsertEdge(node1, node2, weight), "Cannot call Graph::InsertEdge when either src or dst node does not exist");
         REQUIRE(g.IsNode(node1) == false);
         REQUIRE(g.IsNode(node2) == false);
       }
@@ -130,7 +134,7 @@ SCENARIO("Default Graph constructor and basic methods work") {
 
 SCENARIO("Graph Constructor with vectors work") {
   GIVEN("Vector of ints") {
-    std::vector<int> v{1, 2, 3, 4, 5};
+    std::vector<int> v{1,2,3,4,5};
     WHEN("Graph constructor is called with vector of ints") {
       gdwg::Graph<int, int> g{v.begin(), v.end()};
       THEN("Contents of graph has vector as nodes") {
@@ -145,7 +149,7 @@ SCENARIO("Graph Constructor with vectors work") {
   GIVEN("Vector of strings") {
     std::vector<std::string> v{"Hello", "how", "are", "you"};
     WHEN("Graph constructor is called with vector of strings") {
-      gdwg::Graph<std::string, double> g{v.begin(), v.end()};
+      gdwg::Graph<std::string, double> g{v.begin(),v.end()};
       THEN("Contents of graph has vector as nodes as expected") {
         REQUIRE(g.isEmpty() == false);
         REQUIRE(g.numNodes() == v.size());
@@ -499,6 +503,95 @@ SCENARIO("Graph Replace Node works") {
         REQUIRE(g.numNodes() == num);
         for (int i = 0; i < num; ++i)
           REQUIRE(g.IsNode(i) == true);
+      }
+    }
+  }
+}
+
+SCENARIO("Graph MergeReplace works") {
+  GIVEN("Basic MergeReplace Example from Specifications") {
+    gdwg::Graph<std::string, int> g;
+    g.InsertNode("A");
+    g.InsertNode("B");
+    g.InsertNode("C");
+    g.InsertNode("D");
+    g.InsertEdge("A", "B", 1);
+    g.InsertEdge("A", "C", 2);
+    g.InsertEdge("A", "D", 3);
+    REQUIRE(g.numEdges() == 3);
+    WHEN("gdwg::Graph::MergeReplace is used with A, B") {
+      g.MergeReplace("A", "B");
+      THEN("Node is replaced and edges are merged as expected") {
+        REQUIRE(g.IsNode("A") == false);
+        REQUIRE(g.IsNode("B") == true);
+        REQUIRE(g.IsConnected("B", "B") == true);
+        REQUIRE(g.IsConnected("B", "C") == true);
+        REQUIRE(g.IsConnected("B", "D") == true);
+        REQUIRE(g.numEdges() == 3);
+      }
+    }
+    WHEN("gdwg::Graph::MergeReplace is used with non-existant lhs node") {
+      THEN("Exception is thrown") {
+        REQUIRE_THROWS_WITH(g.MergeReplace("E", "C"), "Cannot call Graph::MergeReplace on old or new data if they don't exist in the graph");
+      }
+    }
+    WHEN("gdwg::Graph::MergeReplace is used with non-existant rhs node") {
+      THEN("Exception is thrown") {
+        REQUIRE_THROWS_WITH(g.MergeReplace("C", "E"), "Cannot call Graph::MergeReplace on old or new data if they don't exist in the graph");
+      }
+    }
+    WHEN("gdwg::Graph::MergeReplace is used with both non-existant nodes") {
+      THEN("Exception is thrown") {
+        REQUIRE_THROWS_WITH(g.MergeReplace("X", "Y"), "Cannot call Graph::MergeReplace on old or new data if they don't exist in the graph");
+      }
+    }
+  }
+
+  GIVEN("Duplicate Edge MergeReplace Example from Specification") {
+    gdwg::Graph<std::string, int> g;
+    g.InsertNode("A");
+    g.InsertNode("B");
+    g.InsertNode("C");
+    g.InsertNode("D");
+    g.InsertEdge("A", "B", 1);
+    g.InsertEdge("A", "C", 2);
+    g.InsertEdge("A", "D", 3);
+    g.InsertEdge("B", "B", 1);
+    REQUIRE(g.numEdges() == 4);
+      WHEN("gdwg::Graph::MergeReplace is used with A, B") {
+      g.MergeReplace("A", "B");
+      THEN("Node is replaced and edges are merged as expected") {
+        REQUIRE(g.IsNode("A") == false);
+        REQUIRE(g.IsNode("B") == true);
+        REQUIRE(g.IsConnected("B", "B") == true);
+        REQUIRE(g.IsConnected("B", "C") == true);
+        REQUIRE(g.IsConnected("B", "D") == true);
+        REQUIRE(g.numEdges() == 3);
+      }
+    }
+  }
+
+  GIVEN("Extra example for Incoming/Outgoing Edges") {
+    gdwg::Graph<std::string, int> g;
+    g.InsertNode("A");
+    g.InsertNode("B");
+    g.InsertNode("C");
+    g.InsertNode("D");
+    g.InsertEdge("A", "B", 1);
+    g.InsertEdge("B", "C", 2);
+    g.InsertEdge("A", "D", 3);
+    REQUIRE(g.numEdges() == 3);
+      WHEN("gdwg::Graph::MergeReplace is used with A, B") {
+      g.MergeReplace("B", "C");
+      THEN("Node is replaced and edges are merged as expected") {
+        REQUIRE(g.IsNode("A") == true);
+        REQUIRE(g.IsNode("B") == false);
+        REQUIRE(g.IsNode("C") == true);
+        REQUIRE(g.IsNode("D") == true);
+        REQUIRE(g.IsConnected("A", "D") == true);
+        REQUIRE(g.IsConnected("C", "C") == true);
+        REQUIRE(g.IsConnected("A", "C") == true);
+        REQUIRE(g.numEdges() == 3);
       }
     }
   }
