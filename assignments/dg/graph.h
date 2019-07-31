@@ -136,7 +136,7 @@ class Graph {
       ++index_;
       if(index_ == index_outer_->second.cend()) {
         // if the Node's set of outgoing edges is empty, keep going to next node
-        while(++index_outer_ == index_outer_end_ || (index_outer_)->second.empty()) {
+        while(++index_outer_ == index_outer_end_ || index_outer_->second.empty()) {
           std::cout << "HELLO" << std::endl;
           // or else keeps looping forever
           if (index_outer_ == index_outer_end_) {
@@ -157,15 +157,18 @@ class Graph {
     }
 
     const_iterator operator--() {
+      // assuming more than one edge in graph, else unexpected behaviour
+      if(index_outer_ == index_outer_end_) {
+        --index_outer_;
+        index_ = index_outer_->second.cend();
+      }
       if(index_ == index_outer_->second.cbegin()) {
-        while(--index_outer_->second.empty()) {
+        while(index_outer_ == index_outer_begin_ || (--index_outer_)->second.empty()) {
           if (index_outer_ == index_outer_begin_) { return *this; }
         }
         index_ = index_outer_->second.cend();
-      } else {
-        --index_;
       }
-//
+      --index_;
       return *this;
     }
     const_iterator operator--(int) {
@@ -177,11 +180,6 @@ class Graph {
     friend bool operator==(const const_iterator& lhs, const const_iterator& rhs) {
       // TODO comparing iterators of same graph only?
       return lhs.index_outer_ == rhs.index_outer_ && lhs.index_ == rhs.index_;
-//      if(lhs.index_outer_ == lhs.index_outer_end_ && rhs.index_outer_ == rhs.index_outer_end_) {
-//        return true;
-//      } else {
-//        return lhs.index_outer_ == rhs.index_outer_ && lhs.index_ == rhs.index_;
-//      }
     }
 
     friend bool operator!=(const const_iterator& lhs, const const_iterator& rhs) {
@@ -189,6 +187,7 @@ class Graph {
     }
 
    private:
+    // TODO: could send in edge_map instead of begin and end?
     explicit const_iterator(typename std::map<std::shared_ptr<N>, std::set<Edge, EdgeCmp>, PtrCmp>::const_iterator index_outer, typename std::map<std::shared_ptr<N>, std::set<Edge, EdgeCmp>, PtrCmp>::const_iterator index_outer_begin, typename std::map<std::shared_ptr<N>, std::set<Edge, EdgeCmp>, PtrCmp>::const_iterator index_outer_end) : index_outer_ {index_outer}, index_outer_begin_{index_outer_begin}, index_outer_end_{index_outer_end} {
       if(index_outer_begin_ == index_outer_end_) {
         // empty

@@ -65,11 +65,16 @@ int main() {
 //    std::cout << from << " -> " << to << " (weight " << weight << ")\n" << std::endl;
 //  }
 
-  // manual iterator test
-  for(auto it = g3.begin(); it != g3.end(); ++it) {
-    std::cout << std::get<0>(*it) << " -> " << std::get<1>(*it) << " (weight " << std::get<2>(*it) << ")\n" << std::endl;
-  }
-  std::cout << "FINISHED SUCCESS\n";
+//  // manual iterator test
+//  for(auto it = g3.begin(); it != g3.end(); ++it) {
+//    std::cout << std::get<0>(*it) << " -> " << std::get<1>(*it) << " (weight " << std::get<2>(*it) << ")\n" << std::endl;
+//  }
+//
+//  for(auto it = --g3.end(); it != --g3.begin(); --it) {
+//    std::cout << std::get<0>(*it) << " -> " << std::get<1>(*it) << " (weight " << std::get<2>(*it) << ")\n" << std::endl;
+//  }
+  std::cout << "COMPLETED SUCCESS" << std::endl;
+
 
 
 

@@ -601,11 +601,14 @@ SCENARIO("Basic Graph iterator methods work as expected") {
   GIVEN("Graph that is empty") {
     gdwg::Graph<std::string, double> g;
     THEN("All variations of begin and end are equal") {
-      // cbegin == cend == begin == end == rbegin == rend
+      // cbegin == cend == begin == end
+      // rbegin == rend == crbegin == crend
       REQUIRE(g.cbegin() == g.cend());
       REQUIRE(g.cend() == g.begin());
       REQUIRE(g.begin() == g.end());
-      // TODO
+      REQUIRE(g.rbegin() == g.rend());
+      REQUIRE(g.rend() == g.crbegin());
+      REQUIRE(g.crbegin() == g.crend());
     }
   }
   GIVEN("Graph with some nodes and edges") {
@@ -621,14 +624,23 @@ SCENARIO("Basic Graph iterator methods work as expected") {
     REQUIRE(g.InsertEdge(node2, node3, weight) == true);
     REQUIRE(g.InsertEdge(node2, node3, -weight) == true);
     REQUIRE(g.InsertEdge(node2, node2, weight) == true);
-    //auto it = g.cbegin();
+    THEN("Begin and End variations act as described in spec") {
+      REQUIRE(*g.begin() == std::make_tuple("c", "s", weight));
+      REQUIRE(*g.cbegin() == std::make_tuple("c", "s", weight));
+      REQUIRE(*g.rbegin() == std::make_tuple("s", "v", weight));
+      REQUIRE(*g.crbegin() == std::make_tuple("s", "v", weight));
+      REQUIRE(*(--g.end()) == std::make_tuple("s", "v", weight));
+      REQUIRE(*(--g.cend()) == std::make_tuple("s", "v", weight));
+      REQUIRE(*(--g.rend()) == std::make_tuple("c", "s", weight));
+      REQUIRE(*(--g.crend()) == std::make_tuple("c", "s", weight));
+    }
 
   }
 
 }
 
-SCENARIO("Graph iterator shows edges in correct order") {
-  GIVEN("Graph with some nodes and edges") {
+SCENARIO("Graph iterator navigates edges in correct order") {
+  GIVEN("Graph with some nodes and edges, and expected edge order") {
     gdwg::Graph<int, int> g;
     g.InsertNode(3);
     g.InsertNode(5);
@@ -646,33 +658,59 @@ SCENARIO("Graph iterator shows edges in correct order") {
     g.InsertEdge(6, 3, 10);
     g.InsertEdge(3, 6, -8);
     g.InsertEdge(6, 2, 5);
+    std::vector<std::tuple<int, int, int>> expected_edges = {{1,5,-1}, {2,1,1}, {2,4,2}, {3,2,2}, {3,6,-8}, {4,1,-4}, {4,5,3}, {5,2,7}, {6,2,5}, {6,3,10}};
     WHEN("Normal iterator is used to iterate through edges") {
-      auto it = g.cbegin();
-      std::vector<std::tuple<int, int, int>> expected_edges = {{1,5,-1}, {2,1,1}, {2,4,2}, {3,2,2}, {3,6,-8}, {4,1,-4}, {4,5,3}, {5,2,7}, {6,2,5}, {6,3,10}};
       THEN("Edges are as expected when using preincrement") {
-        REQUIRE(*it == expected_edges[0]);
         int i = 0;
-        for(;it != g.cend(); it++) {
+        for(auto it = g.begin(); it != g.cend(); ++it) {
           REQUIRE(*it == expected_edges[i++]);
         }
       }
       THEN("Edges are as expected when using postincrement") {
         int i = 0;
-        for(;it != g.end(); it++) {
+        for(auto it = g.begin(); it != g.end(); it++) {
+          REQUIRE(*it == expected_edges[i++]);
+        }
+      }
+      THEN("Edges are as expected when using predecrement"){
+        int i = 0;
+        for(auto it = --g.end(); it != g.begin(); --it) {
+          REQUIRE(*it == expected_edges[9-i++]);
+        }
+      }
+      THEN("Edges are as expected when using postdecrement"){
+        int i = 0;
+        for(auto it = --g.end(); it != g.begin(); it--) {
+          REQUIRE(*it == expected_edges[9-i++]);
+        }
+      }
+    }
+    WHEN("Reverse iterator is used to iterate through edges") {
+      THEN("Edges are as expected when using preincrement") {
+        int i = 0;
+        for (auto it = g.rbegin(); it != g.rend(); ++it) {
+          REQUIRE(*it == expected_edges[9 - i++]);
+        }
+      }
+      THEN("Edges are as expected when using postincrement") {
+        int i = 0;
+        for(auto it = g.rbegin(); it != g.rend(); it++) {
+          REQUIRE(*it == expected_edges[9 - i++]);
+        }
+      }
+      THEN("Edges are as expected when using predecrement"){
+        int i = 0;
+        for(auto it = --g.rend(); it != g.rbegin(); --it) {
+          REQUIRE(*it == expected_edges[i++]);
+        }
+      }
+      THEN("Edges are as expected when using postdecrement"){
+        int i = 0;
+        for(auto it = --g.rend(); it != g.rbegin(); it--) {
           REQUIRE(*it == expected_edges[i++]);
         }
       }
     }
-//    WHEN("Reverse iterator is used to iterate through edges") {
-//      auto it = g.rbegin();
-//      std::vector<std::tuple<int, int, int>> expected_edges = {{1,5,-1}, {2,1,1}, {2,4,2}, {3,2,2}, {3,6,-8}, {4,1,-4}, {4,5,3}, {5,2,7}, {6,2,5}, {6,3,10}};
-//      THEN("Edges are as expected when using preincrement") {
-//        //int i = 0;
-//        REQUIRE(*it == expected_edges[9]);
-//        for(;it != g.rend(); ++it) {
-//          REQUIRE(*it == expected_edges[9 - i++]);
-//        }
-//      }
   }
 }
 
