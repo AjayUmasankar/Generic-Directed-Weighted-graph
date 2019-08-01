@@ -15,7 +15,7 @@ namespace gdwg {
 template <typename N, typename E>
 class Graph {
  public:
-  Graph() : node_set(), edge_map() {}
+  Graph() : edge_map() {}
   Graph(typename std::vector<N>::const_iterator start, typename std::vector<N>::const_iterator end)
       : Graph() {
     for (auto it = start; it != end; it++)
@@ -40,11 +40,9 @@ class Graph {
       InsertNode(*it);
   }
   Graph(const Graph& other) : Graph() {
-    node_set = other.node_set;
     edge_map = other.edge_map;
   }
   Graph(Graph&& other) : Graph() {
-    node_set = std::move(other.node_set);
     edge_map = std::move(other.edge_map);
     other.Clear();
   }
@@ -188,7 +186,7 @@ class Graph {
 
    private:
     // TODO: could send in edge_map instead of begin and end?
-    explicit const_iterator(typename std::map<std::shared_ptr<N>, std::set<Edge, EdgeCmp>, PtrCmp>::const_iterator index_outer, typename std::map<std::shared_ptr<N>, std::set<Edge, EdgeCmp>, PtrCmp>::const_iterator index_outer_begin, typename std::map<std::shared_ptr<N>, std::set<Edge, EdgeCmp>, PtrCmp>::const_iterator index_outer_end) : index_outer_ {index_outer}, index_outer_begin_{index_outer_begin}, index_outer_end_{index_outer_end} {
+    explicit const_iterator(typename std::map<Node, std::set<Edge, EdgeCmp>, NodeCmp>::const_iterator index_outer, typename std::map<Node, std::set<Edge, EdgeCmp>, NodeCmp>::const_iterator index_outer_begin, typename std::map<Node, std::set<Edge, EdgeCmp>, NodeCmp>::const_iterator index_outer_end) : index_outer_ {index_outer}, index_outer_begin_{index_outer_begin}, index_outer_end_{index_outer_end} {
       if(index_outer_begin_ == index_outer_end_) {
         // empty
       } else if (index_outer_ == index_outer_end_) {
@@ -200,9 +198,9 @@ class Graph {
       }
 
     }
-    typename std::map<std::shared_ptr<N>, std::set<Edge, EdgeCmp>, PtrCmp>::const_iterator index_outer_;
-    typename std::map<std::shared_ptr<N>, std::set<Edge, EdgeCmp>, PtrCmp>::const_iterator index_outer_begin_;
-    typename std::map<std::shared_ptr<N>, std::set<Edge, EdgeCmp>, PtrCmp>::const_iterator index_outer_end_;
+    typename std::map<Node, std::set<Edge, EdgeCmp>, NodeCmp>::const_iterator index_outer_;
+    typename std::map<Node, std::set<Edge, EdgeCmp>, NodeCmp>::const_iterator index_outer_begin_;
+    typename std::map<Node, std::set<Edge, EdgeCmp>, NodeCmp>::const_iterator index_outer_end_;
     typename std::set<Edge, EdgeCmp>::const_iterator index_;
 
     friend class Graph;
@@ -224,7 +222,6 @@ class Graph {
 
   void Clear() {
     // TODO: Do we need to .reset() any pointers?
-    node_set.clear();
     edge_map.clear();
   }
 
@@ -261,8 +258,8 @@ class Graph {
   }
 
   bool erase(const N& src, const N& dst, const E& w) {
-    std::shared_ptr<N> src_sp = node_set.find(Node{src})->get();
-    auto it = edge_map.find(src_sp);
+    //std::shared_ptr<N> src_sp = edge_map.find(Node{src})->first.get();
+    auto it = edge_map.find(Node{src});
     if(it == edge_map.end()) {
       return false;
     }
@@ -298,7 +295,6 @@ class Graph {
       if (this != &other)
         then do the bottom?
      */
-    node_set = other.node_set;
     edge_map = other.edge_map;
     return *this;
   }
@@ -308,16 +304,20 @@ class Graph {
       if (this != &other)
         then do the bottom?
      */
-    node_set = std::move(other.node_set);
     edge_map = std::move(other.edge_map);
     other.Clear();
     return *this;
   }
 
   friend std::ostream& operator<<(std::ostream& os, const gdwg::Graph<N, E>& g) {
-    for(const Node& node : g.node_set) {
-      std::cout << *node << " (\n";
-      std::set<Edge, EdgeCmp> node_to_edge = g.edge_map.find(node.get())->second;
+//    std::set<Edge, EdgeCmp> node_to_edge = g.edge_map.find(node.get())->second;
+//    for(const auto &[src, dst, weight] : node_to_edge) {
+//      std::cout << "  " << *dst.lock() << " | " << *weight << "\n";
+//    }
+
+    for(const auto &[key, val]  : g.edge_map) {
+      std::cout << *key << " (\n";
+      std::set<Edge, EdgeCmp> node_to_edge = val;
       for(const auto &[src, dst, weight] : node_to_edge) {
         std::cout << "  " << *dst.lock() << " | " << *weight << "\n";
       }
@@ -328,11 +328,11 @@ class Graph {
 
 // common methods (not in spec)
   bool isEmpty() {
-    return node_set.empty() && edge_map.empty();
+    return edge_map.empty();
   }
 
   size_t numNodes() {
-    return node_set.size();
+    return edge_map.size();
   }
 
   size_t numEdges() {
@@ -345,12 +345,11 @@ class Graph {
 
 
  private:
-  std::set<Node, NodeCmp> node_set;
 //  // maps input nodes into our heap-allocated equivalent
 //  cant do this because we are storing a copy of N
 //  std::map<N, std::shared_ptr<N>> node_map;
   //std::set<Edge, EdgeCmp> edge_set;
-  std::map<std::shared_ptr<N>, std::set<Edge, EdgeCmp>, PtrCmp> edge_map;
+  std::map<Node, std::set<Edge, EdgeCmp>, NodeCmp> edge_map;
 };
 
 }  // namespace gdwg

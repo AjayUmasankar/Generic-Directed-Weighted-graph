@@ -9,9 +9,6 @@ https://github.com/catchorg/Catch2/blob/master/docs/tutorial.md
 #include "assignments/dg/graph.h"
 #include "catch.h"
 
-// TODO: GetNodes increasing order of node??
-// TODO: GetConnected ambiguity (include only outnodes or innodes?)
-
 SCENARIO("Default Graph constructor and basic methods work") {
   GIVEN("Default Graph constructor Graph<string, int>") {
     gdwg::Graph<std::string, int> g;
