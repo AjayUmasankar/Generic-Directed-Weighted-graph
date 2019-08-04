@@ -1,13 +1,14 @@
 #ifndef ASSIGNMENTS_DG_GRAPH_H_
 #define ASSIGNMENTS_DG_GRAPH_H_
 
+#include <algorithm>
 #include <iostream>
 #include <map>
 #include <memory>
 #include <set>
 #include <string>
 #include <vector>
-#include <algorithm>
+
 
 namespace gdwg {
 
@@ -17,28 +18,28 @@ template <typename N, typename E>
 class Graph {
  private:
   struct Edge {
-    std::weak_ptr<N> src;
-    std::weak_ptr<N> dst;
-    std::shared_ptr<E> weight;
+    std::weak_ptr<N> src_;
+    std::weak_ptr<N> dst_;
+    std::shared_ptr<E> weight_;
     friend bool operator==(const Edge& lhs, const Edge& rhs) {
-      return *lhs.src.lock() == *rhs.src.lock() && *lhs.dst.lock() == *rhs.dst.lock() && *lhs.weight == *rhs.weight;
+      return *lhs.src_.lock() == *rhs.src_.lock() && *lhs.dst_.lock() == *rhs.dst_.lock() && *lhs.weight_ == *rhs.weight_;
     }
   };
   class Node {
    public:
-    Node(N value) : node_sp{std::make_shared<N>(value)} {};
-    N& operator* () const { return *node_sp; }
-    std::shared_ptr<N> get() const { return node_sp; }
+    Node(N value) : sptr_{std::make_shared<N>(value)} {};
+    N& operator* () const { return *sptr_; }
+    std::shared_ptr<N> get() const { return sptr_; }
 
 //    bool operator<(const Node& other) const {
 //      return *this < *other;
 //    }
     friend bool operator==(const Node& lhs, const Node& rhs) {
-      return *lhs.node_sp == *rhs.node_sp;
+      return *lhs.sptr_ == *rhs.sptr_;
     }
 
    private:
-    std::shared_ptr<N> node_sp;
+    std::shared_ptr<N> sptr_;
   };
 
 
@@ -51,14 +52,14 @@ class Graph {
   // this is the comparison as well as the ordering function for the set, cant seperate the two
   struct EdgeCmp {
     bool operator() (const Edge lhs, const Edge rhs) const {
-      N src1 = *lhs.src.lock();
-      N src2 = *rhs.src.lock();
+      N src1 = *lhs.src_.lock();
+      N src2 = *rhs.src_.lock();
       if (src1 == src2) {
-        N dst1 = *lhs.dst.lock();
-        N dst2 = *rhs.dst.lock();
+        N dst1 = *lhs.dst_.lock();
+        N dst2 = *rhs.dst_.lock();
         if(dst1 == dst2) {
-          E w1 = *lhs.weight;
-          E w2 = *rhs.weight;
+          E w1 = *lhs.weight_;
+          E w2 = *rhs.weight_;
           return w1 < w2;
         }
         return dst1 < dst2;
@@ -68,7 +69,7 @@ class Graph {
   };
 
  public:
-  Graph() : edge_map() {}
+  Graph() : edge_map_() {}
   Graph(typename std::vector<N>::const_iterator start, typename std::vector<N>::const_iterator end)
       : Graph() {
     for (auto it = start; it != end; it++)
@@ -93,10 +94,10 @@ class Graph {
       InsertNode(*it);
   }
   Graph(const Graph& other) : Graph() {
-    edge_map = other.edge_map;
+    edge_map_ = other.edge_map_;
   }
   Graph(Graph&& other) : Graph() {
-    edge_map = std::move(other.edge_map);
+    edge_map_ = std::move(other.edge_map_);
     other.Clear();
   }
 
@@ -110,7 +111,7 @@ class Graph {
       if (this != &other)
         then do the bottom?
      */
-    edge_map = other.edge_map;
+    edge_map_ = other.edge_map_;
     return *this;
   }
 
@@ -119,7 +120,7 @@ class Graph {
       if (this != &other)
         then do the bottom?
      */
-    edge_map = std::move(other.edge_map);
+    edge_map_ = std::move(other.edge_map_);
     other.Clear();
     return *this;
   }
@@ -138,7 +139,7 @@ class Graph {
 //      if(cur.src.expired() || cur.dst.expired()) {
 //        std::cout << "Expired ... " << std::endl;
 //      }
-      return {*cur.src.lock(), *cur.dst.lock(), *cur.weight};
+      return {*cur.src_.lock(), *cur.dst_.lock(), *cur.weight_};
     }
 
     pointer operator->() const { return &(operator*()); }
@@ -236,7 +237,7 @@ class Graph {
 // iterator methods
 
   void Clear() {
-    edge_map.clear();
+    edge_map_.clear();
   }
 
 
@@ -252,15 +253,15 @@ class Graph {
 
   bool erase(const N& src, const N& dst, const E& w) {
     // if edge exists, delete it and return true. Else, false
-    auto it = edge_map.find(Node{src});
-    if(it == edge_map.end()) {
+    auto it = edge_map_.find(Node{src});
+    if(it == edge_map_.end()) {
       return false;
     }
 
     std::set<Edge, EdgeCmp>& edge_set = it->second;
     auto edge_it = std::find_if(edge_set.cbegin(), edge_set.cend(),
                                 [=] (const Edge& e) {
-                                  return *e.dst.lock() == dst && *e.weight == w;
+                                  return *e.dst_.lock() == dst && *e.weight_ == w;
                                 });
 
     if(edge_it == edge_set.end()) {
@@ -310,9 +311,14 @@ class Graph {
 
 // friends
 
-
+  friend bool operator==(const gdwg::Graph<N, E>& g1, const gdwg::Graph<N, E>& g2) {
+    return g1.edge_map_ == g2.edge_map_;
+  }
+  friend bool operator!=(const gdwg::Graph<N, E>& g1, const gdwg::Graph<N, E>& g2) {
+    return !(g1==g2);
+  }
   friend std::ostream& operator<<(std::ostream& os, const gdwg::Graph<N, E>& g) {
-    for(const auto &[key, val]  : g.edge_map) {
+    for(const auto &[key, val]  : g.edge_map_) {
       std::cout << *key << " (\n";
       std::set<Edge, EdgeCmp> node_to_edge = val;
       for(const auto &[src, dst, weight] : node_to_edge) {
@@ -324,17 +330,17 @@ class Graph {
   }
 
 // common methods (not in spec)
-  bool isEmpty() {
-    return edge_map.empty();
+  bool IsEmpty() const {
+    return edge_map_.empty();
   }
 
-  size_t numNodes() {
-    return edge_map.size();
+  size_t NumNodes() const {
+    return edge_map_.size();
   }
 
-  size_t numEdges() {
+  size_t NumEdges() const {
     size_t sum = 0;
-    for (const auto& n : edge_map)
+    for (const auto& n : edge_map_)
       sum += n.second.size();
     return sum;
   }
@@ -342,7 +348,7 @@ class Graph {
 
 
  private:
-  std::map<Node, std::set<Edge, EdgeCmp>, NodeCmp> edge_map;
+  std::map<Node, std::set<Edge, EdgeCmp>, NodeCmp> edge_map_;
 };
 
 }  // namespace gdwg
