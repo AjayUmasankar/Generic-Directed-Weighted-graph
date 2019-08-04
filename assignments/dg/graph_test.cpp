@@ -3,6 +3,36 @@
   Explain and justify how you approached testing, the degree
    to which you're certain you have covered all possibilities,
    and why you think your tests are that thorough.
+
+  Tests were written in the BDD style to reflect on the different
+  behaviour required for different situations. Scenarios are written
+  for graphs with some variation of ints and strings.
+
+  Tests were written for constructors, functions and operators. 
+  In these tests exceptions are checked for and const member functions are
+  also checked. Some functions that require the graph not be changed are
+  tested with the check_* family of catch2 macros so that extra assertions
+  can be used to ensure that the graph state is unchanged.
+
+  Tests begin by testing the default constructor along with basic functions
+  such as insertnode, insertedge, isconnected, getconnected and getweight.
+  Extra functions implemented to aid testing are also tested here (isempty, 
+  numnodes, numedges). The first test scenario serves as a base to ensure that
+  basic functions that will be used in following test cases work.
+
+  Following this other test scenarios are introduced for each different 
+  constructor. Functions are tested following this, with exception testing
+  if relevant. Replace and MergeReplace have tests that were lifted from
+  the specification examples. Extra tests were also written for corner cases 
+  that the spec examples didn't cover.
+
+  Graph iterator methods are tested for iteration order, ability to search
+  and successful removal.
+
+  Const member functions are tested with const objects to ensure that they
+  work.
+
+
 https://github.com/catchorg/Catch2/blob/master/docs/tutorial.md
 */
 
@@ -14,28 +44,20 @@ SCENARIO("Default Graph constructor and basic methods work") {
     gdwg::Graph<std::string, int> g;
 
     WHEN("IsEmpty is used to check state of graph") {
-      THEN("result is true (graph is empty)") {
-        REQUIRE(g.IsEmpty() == true);
-      }
+      THEN("result is true (graph is empty)") { REQUIRE(g.IsEmpty() == true); }
     }
 
     WHEN("NumNodes is used to check number of nodes") {
-      THEN("result is 0") {
-        REQUIRE(g.NumNodes() == 0);
-      }
+      THEN("result is 0") { REQUIRE(g.NumNodes() == 0); }
     }
 
     WHEN("NumEdges is used to check number of edges") {
-      THEN("result is 0") {
-        REQUIRE(g.NumEdges() == 0);
-      }
+      THEN("result is 0") { REQUIRE(g.NumEdges() == 0); }
     }
 
     WHEN("IsNode is used to check for non-existing node") {
       std::string node1{"b"};
-      THEN("result is false (node doesn't exist)") {
-        REQUIRE(g.IsNode(node1) == false);
-      }
+      THEN("result is false (node doesn't exist)") { REQUIRE(g.IsNode(node1) == false); }
     }
 
     WHEN("InsertNode is used to insert nodes") {
@@ -99,36 +121,45 @@ SCENARIO("Default Graph constructor and basic methods work") {
         std::string node5{"e"};
         std::string node6{"f"};
         THEN("exception is thrown as expected") {
-          REQUIRE_THROWS_WITH(g.IsConnected(node5, node6), "Cannot call Graph::IsConnected if src or dst node don't exist in the graph");
+          REQUIRE_THROWS_WITH(
+              g.IsConnected(node5, node6),
+              "Cannot call Graph::IsConnected if src or dst node don't exist in the graph");
         }
       }
 
       WHEN("GetConnected is used with non-existing source node") {
         std::string node5{"e"};
         THEN("exception is thrown as expected") {
-          REQUIRE_THROWS_WITH(g.GetConnected(node5), "Cannot call Graph::GetConnected if src doesn't exist in the graph");
+          REQUIRE_THROWS_WITH(g.GetConnected(node5),
+                              "Cannot call Graph::GetConnected if src doesn't exist in the graph");
         }
       }
 
       WHEN("GetWeights is used with non-existing lhs node") {
         std::string node5{"e"};
         THEN("exception is thrown as expected") {
-          REQUIRE_THROWS_WITH(g.GetWeights(node5, node1), "Cannot call Graph::GetWeights if src or dst node don't exist in the graph");
+          REQUIRE_THROWS_WITH(
+              g.GetWeights(node5, node1),
+              "Cannot call Graph::GetWeights if src or dst node don't exist in the graph");
         }
       }
 
       WHEN("GetWeights is used with non-existing rhs node") {
         std::string node5{"e"};
         THEN("exception is thrown as expected") {
-          REQUIRE_THROWS_WITH(g.GetWeights(node1, node5), "Cannot call Graph::GetWeights if src or dst node don't exist in the graph");
+          REQUIRE_THROWS_WITH(
+              g.GetWeights(node1, node5),
+              "Cannot call Graph::GetWeights if src or dst node don't exist in the graph");
         }
       }
 
       WHEN("GetWeights is used with non-existing nodes") {
         std::string node5{"e"};
-        std::string node6{"f"};        
+        std::string node6{"f"};
         THEN("exception is thrown as expected") {
-          REQUIRE_THROWS_WITH(g.GetWeights(node5, node6), "Cannot call Graph::GetWeights if src or dst node don't exist in the graph");
+          REQUIRE_THROWS_WITH(
+              g.GetWeights(node5, node6),
+              "Cannot call Graph::GetWeights if src or dst node don't exist in the graph");
         }
       }
 
@@ -185,7 +216,9 @@ SCENARIO("Default Graph constructor and basic methods work") {
       REQUIRE(g.IsNode(node1) == false);
       REQUIRE(g.IsNode(node2) == false);
       THEN("exception is thrown and graph is unchanged") {
-        CHECK_THROWS_WITH(g.InsertEdge(node1, node2, weight), "Cannot call Graph::InsertEdge when either src or dst node does not exist");
+        CHECK_THROWS_WITH(
+            g.InsertEdge(node1, node2, weight),
+            "Cannot call Graph::InsertEdge when either src or dst node does not exist");
         REQUIRE(g.IsNode(node1) == false);
         REQUIRE(g.IsNode(node2) == false);
       }
@@ -195,7 +228,7 @@ SCENARIO("Default Graph constructor and basic methods work") {
 
 SCENARIO("Graph Constructor with vectors work") {
   GIVEN("Vector of ints") {
-    std::vector<int> v{1,2,3,4,5};
+    std::vector<int> v{1, 2, 3, 4, 5};
     WHEN("Graph constructor is called with vector of ints") {
       gdwg::Graph<int, int> g{v.begin(), v.end()};
       THEN("Contents of graph has vector as nodes") {
@@ -203,7 +236,7 @@ SCENARIO("Graph Constructor with vectors work") {
         REQUIRE(g.NumNodes() == v.size());
         for (const auto& e : v)
           REQUIRE(g.IsNode(e));
-        REQUIRE_THAT(g.GetNodes(), Catch::Matchers::Equals(std::vector<int>{1,2,3,4,5}));
+        REQUIRE_THAT(g.GetNodes(), Catch::Matchers::Equals(std::vector<int>{1, 2, 3, 4, 5}));
         REQUIRE(g.NumEdges() == 0);
       }
     }
@@ -212,14 +245,14 @@ SCENARIO("Graph Constructor with vectors work") {
   GIVEN("Vector of strings") {
     std::vector<std::string> v{"Hello", "how", "are", "you"};
     WHEN("Graph constructor is called with vector of strings") {
-      gdwg::Graph<std::string, double> g{v.begin(),v.end()};
+      gdwg::Graph<std::string, double> g{v.begin(), v.end()};
       THEN("Contents of graph has vector as nodes as expected") {
         REQUIRE(g.IsEmpty() == false);
         REQUIRE(g.NumNodes() == v.size());
         for (const auto& e : v)
           REQUIRE(g.IsNode(e));
-        REQUIRE_THAT(g.GetNodes(), Catch::Matchers::Equals(std::vector<std::string>{"Hello","are","how","you"}));
-
+        REQUIRE_THAT(g.GetNodes(), Catch::Matchers::Equals(
+                                       std::vector<std::string>{"Hello", "are", "how", "you"}));
       }
     }
   }
@@ -334,7 +367,7 @@ SCENARIO("Graph copy constructor/assignment work") {
   GIVEN("Graph constructed with initializer list of chars") {
     gdwg::Graph<char, std::string> g{'c', 's', 'e'};
     WHEN("copy constructor is used") {
-      g.InsertEdge('c','s',"howdy");
+      g.InsertEdge('c', 's', "howdy");
       gdwg::Graph<char, std::string> cp{g};
       THEN("graph is copied with the nodes as expected") {
         REQUIRE(cp.IsEmpty() == false);
@@ -583,7 +616,7 @@ SCENARIO("Graph GetNodes works") {
     g.InsertNode(2);
     WHEN("GetNodes is used") {
       THEN("vector of sorted nodes is returned") {
-        REQUIRE_THAT(g.GetNodes(), Catch::Matchers::Equals(std::vector<int>{1,2,3,4,5}));
+        REQUIRE_THAT(g.GetNodes(), Catch::Matchers::Equals(std::vector<int>{1, 2, 3, 4, 5}));
       }
     }
   }
@@ -591,9 +624,7 @@ SCENARIO("Graph GetNodes works") {
   GIVEN("Empty graph") {
     gdwg::Graph<int, int> g;
     WHEN("GetNodes is used") {
-      THEN("empty vector is returned") {
-        REQUIRE(g.GetNodes().empty());
-      }
+      THEN("empty vector is returned") { REQUIRE(g.GetNodes().empty()); }
     }
   }
 }
@@ -622,17 +653,23 @@ SCENARIO("Graph MergeReplace works") {
     }
     WHEN("MergeReplace is used with non-existant lhs node") {
       THEN("exception is thrown") {
-        REQUIRE_THROWS_WITH(g.MergeReplace("E", "C"), "Cannot call Graph::MergeReplace on old or new data if they don't exist in the graph");
+        REQUIRE_THROWS_WITH(
+            g.MergeReplace("E", "C"),
+            "Cannot call Graph::MergeReplace on old or new data if they don't exist in the graph");
       }
     }
     WHEN("MergeReplace is used with non-existant rhs node") {
       THEN("exception is thrown") {
-        REQUIRE_THROWS_WITH(g.MergeReplace("C", "E"), "Cannot call Graph::MergeReplace on old or new data if they don't exist in the graph");
+        REQUIRE_THROWS_WITH(
+            g.MergeReplace("C", "E"),
+            "Cannot call Graph::MergeReplace on old or new data if they don't exist in the graph");
       }
     }
     WHEN("MergeReplace is used with both non-existant nodes") {
       THEN("exception is thrown") {
-        REQUIRE_THROWS_WITH(g.MergeReplace("X", "Y"), "Cannot call Graph::MergeReplace on old or new data if they don't exist in the graph");
+        REQUIRE_THROWS_WITH(
+            g.MergeReplace("X", "Y"),
+            "Cannot call Graph::MergeReplace on old or new data if they don't exist in the graph");
       }
     }
   }
@@ -648,7 +685,7 @@ SCENARIO("Graph MergeReplace works") {
     g.InsertEdge("A", "D", 3);
     g.InsertEdge("B", "B", 1);
     REQUIRE(g.NumEdges() == 4);
-      WHEN("MergeReplace is used with A, B") {
+    WHEN("MergeReplace is used with A, B") {
       g.MergeReplace("A", "B");
       THEN("node is replaced and edges are merged as expected") {
         REQUIRE(g.IsNode("A") == false);
@@ -671,7 +708,7 @@ SCENARIO("Graph MergeReplace works") {
     g.InsertEdge("B", "C", 2);
     g.InsertEdge("A", "D", 3);
     REQUIRE(g.NumEdges() == 3);
-      WHEN("MergeReplace is used with A, B") {
+    WHEN("MergeReplace is used with A, B") {
       g.MergeReplace("B", "C");
       THEN("node is replaced and edges are merged as expected") {
         REQUIRE(g.IsNode("A") == true);
@@ -759,7 +796,6 @@ SCENARIO("Basic Graph iterator methods work as expected") {
       REQUIRE(*(--g.crend()) == std::make_tuple("c", "s", weight));
     }
   }
-
 }
 
 SCENARIO("Graph iterator navigates edges in correct order") {
@@ -790,31 +826,33 @@ SCENARIO("Graph iterator navigates edges in correct order") {
     REQUIRE(g.InsertEdge(3, 6, -8) == true);
     REQUIRE(g.InsertEdge(6, 2, 5) == true);
     // 10 edges
-    std::vector<std::tuple<int, int, int>> expected_edges = {{1,5,-1}, {2,1,1}, {2,4,2}, {3,2,2}, {3,6,-8}, {4,1,-4}, {4,5,3}, {5,2,7}, {6,2,5}, {6,3,10}};
+    std::vector<std::tuple<int, int, int>> expected_edges = {
+        {1, 5, -1}, {2, 1, 1}, {2, 4, 2}, {3, 2, 2}, {3, 6, -8},
+        {4, 1, -4}, {4, 5, 3}, {5, 2, 7}, {6, 2, 5}, {6, 3, 10}};
     WHEN("Normal iterator is used to iterate through edges") {
       THEN("Edges are as expected when using preincrement") {
         int i = 0;
-        for(auto it = g.begin(); it != g.cend(); ++it) {
+        for (auto it = g.begin(); it != g.cend(); ++it) {
           REQUIRE(*it == expected_edges[i++]);
         }
       }
       THEN("Edges are as expected when using postincrement") {
         int i = 0;
-        for(auto it = g.begin(); it != g.end(); it++) {
+        for (auto it = g.begin(); it != g.end(); it++) {
           REQUIRE(*it == expected_edges[i++]);
         }
         REQUIRE(i == 10);
       }
-      THEN("Edges are as expected when using predecrement"){
+      THEN("Edges are as expected when using predecrement") {
         int i = 0;
-        for(auto it = --g.end(); it != g.begin(); --it) {
-          REQUIRE(*it == expected_edges[9-i++]);
+        for (auto it = --g.end(); it != g.begin(); --it) {
+          REQUIRE(*it == expected_edges[9 - i++]);
         }
       }
-      THEN("Edges are as expected when using postdecrement"){
+      THEN("Edges are as expected when using postdecrement") {
         int i = 0;
-        for(auto it = --g.end(); it != g.begin(); it--) {
-          REQUIRE(*it == expected_edges[9-i++]);
+        for (auto it = --g.end(); it != g.begin(); it--) {
+          REQUIRE(*it == expected_edges[9 - i++]);
         }
         REQUIRE(i == 9);
       }
@@ -829,19 +867,19 @@ SCENARIO("Graph iterator navigates edges in correct order") {
 
       THEN("Edges are as expected when using postincrement") {
         int i = 0;
-        for(auto it = g.rbegin(); it != g.rend(); it++) {
+        for (auto it = g.rbegin(); it != g.rend(); it++) {
           REQUIRE(*it == expected_edges[9 - i++]);
         }
       }
-      THEN("Edges are as expected when using predecrement"){
+      THEN("Edges are as expected when using predecrement") {
         int i = 0;
-        for(auto it = --g.rend(); it != g.rbegin(); --it) {
+        for (auto it = --g.rend(); it != g.rbegin(); --it) {
           REQUIRE(*it == expected_edges[i++]);
         }
       }
-      THEN("Edges are as expected when using postdecrement"){
+      THEN("Edges are as expected when using postdecrement") {
         int i = 0;
-        for(auto it = --g.rend(); it != g.rbegin(); it--) {
+        for (auto it = --g.rend(); it != g.rbegin(); it--) {
           REQUIRE(*it == expected_edges[i++]);
         }
       }
@@ -856,7 +894,7 @@ SCENARIO("Graph find works as expected") {
     REQUIRE(g.InsertNode(88) == true);
     REQUIRE(g.NumEdges() == 0);
     THEN("Find returns g.end() when called") {
-      auto it = g.find(1,88,0);
+      auto it = g.find(1, 88, 0);
       REQUIRE(it == g.end());
       REQUIRE(g.NumEdges() == 0);
     }
@@ -864,17 +902,17 @@ SCENARIO("Graph find works as expected") {
   GIVEN("Graph with one edge") {
     REQUIRE(g.InsertNode(1) == true);
     REQUIRE(g.InsertNode(88) == true);
-    REQUIRE(g.InsertEdge(1,88,1) == true);
+    REQUIRE(g.InsertEdge(1, 88, 1) == true);
     REQUIRE(g.NumEdges() == 1);
-    REQUIRE(g.IsConnected(1,88) == true);
+    REQUIRE(g.IsConnected(1, 88) == true);
     THEN("Find can find the edge successfully with no side effects") {
-      auto it = g.find(1,88,1);
+      auto it = g.find(1, 88, 1);
       REQUIRE(it != g.cend());
       REQUIRE(g.NumEdges() == 1);
-      REQUIRE(g.IsConnected(1,88) == true);
+      REQUIRE(g.IsConnected(1, 88) == true);
     }
     THEN("Find fails when searching for nonexistant edge") {
-      auto it = g.find(1,88,2);
+      auto it = g.find(1, 88, 2);
       REQUIRE(it == g.cend());
     }
   }
@@ -901,22 +939,22 @@ SCENARIO("Graph find works as expected") {
     REQUIRE(g.InsertEdge(6, 2, 5) == true);
     REQUIRE(g.NumEdges() == 10);
     THEN("Find can find first edge successfully") {
-      auto it = g.find(1,5,-1);
+      auto it = g.find(1, 5, -1);
       REQUIRE(*it == std::make_tuple(1, 5, -1));
     }
     THEN("Find can find a (random) edge successfully") {
-      auto it = g.find(4,5,3);
+      auto it = g.find(4, 5, 3);
       REQUIRE(*it == std::make_tuple(4, 5, 3));
     }
     THEN("Find can find last edge successfully") {
-      auto it = g.find(6,3,10);
+      auto it = g.find(6, 3, 10);
       REQUIRE(*it == std::make_tuple(6, 3, 10));
     }
   }
 }
 
 SCENARIO("Graph erase (method) works as expected") {
- gdwg::Graph<int, int> g;
+  gdwg::Graph<int, int> g;
   GIVEN("Graph with no edges") {
     REQUIRE(g.InsertNode(1) == true);
     REQUIRE(g.InsertNode(88) == true);
@@ -929,26 +967,26 @@ SCENARIO("Graph erase (method) works as expected") {
   GIVEN("Graph with one edge") {
     REQUIRE(g.InsertNode(1) == true);
     REQUIRE(g.InsertNode(88) == true);
-    REQUIRE(g.InsertEdge(1,88,1) == true);
+    REQUIRE(g.InsertEdge(1, 88, 1) == true);
     REQUIRE(g.NumEdges() == 1);
-    REQUIRE(g.IsConnected(1,88) == true);
+    REQUIRE(g.IsConnected(1, 88) == true);
     THEN("Erase can remove first edge successfully") {
       REQUIRE(g.erase(1, 88, 1) == true);
       REQUIRE(g.NumEdges() == 0);
-      REQUIRE(g.IsConnected(1,88) == false);
+      REQUIRE(g.IsConnected(1, 88) == false);
     }
   }
   GIVEN("Graph with two edges") {
     REQUIRE(g.InsertNode(1) == true);
     REQUIRE(g.InsertNode(88) == true);
-    REQUIRE(g.InsertEdge(1,88,1) == true);
+    REQUIRE(g.InsertEdge(1, 88, 1) == true);
     REQUIRE(g.InsertEdge(1, 88, 2) == true);
     REQUIRE(g.NumEdges() == 2);
-    REQUIRE(g.IsConnected(1,88) == true);
+    REQUIRE(g.IsConnected(1, 88) == true);
     THEN("Erase can remove first edge successfully") {
       REQUIRE(g.erase(1, 88, 1) == true);
       REQUIRE(g.NumEdges() == 1);
-      REQUIRE(g.IsConnected(1,88) == true);
+      REQUIRE(g.IsConnected(1, 88) == true);
     }
   }
 }
@@ -968,14 +1006,14 @@ SCENARIO("Graph erase(iterator) works as expected") {
   GIVEN("Graph with one edge") {
     REQUIRE(g.InsertNode(1) == true);
     REQUIRE(g.InsertNode(88) == true);
-    REQUIRE(g.InsertEdge(1,88,1) == true);
+    REQUIRE(g.InsertEdge(1, 88, 1) == true);
     REQUIRE(g.NumEdges() == 1);
-    REQUIRE(g.IsConnected(1,88) == true);
+    REQUIRE(g.IsConnected(1, 88) == true);
     THEN("Erase can remove first edge successfully") {
       auto it = g.erase(g.cbegin());
       REQUIRE(it == g.cend());
       REQUIRE(g.NumEdges() == 0);
-      REQUIRE(g.IsConnected(1,88) == false);
+      REQUIRE(g.IsConnected(1, 88) == false);
     }
   }
   GIVEN("Graph with many edges") {
@@ -1002,38 +1040,36 @@ SCENARIO("Graph erase(iterator) works as expected") {
     REQUIRE(g.NumEdges() == 10);
     // successfully here implies no side effects (
     THEN("Erase can remove first edge successfully") {
-      REQUIRE(g.IsConnected(1,5) == true);
-      REQUIRE(g.find(1,5,-1) != g.cend());
+      REQUIRE(g.IsConnected(1, 5) == true);
+      REQUIRE(g.find(1, 5, -1) != g.cend());
       auto it = g.erase(g.cbegin());
       REQUIRE(*it == std::make_tuple(2, 1, 1));
       REQUIRE(g.NumEdges() == 9);
-      REQUIRE(g.IsConnected(1,5) == false);
-      REQUIRE(g.find(1,5,-1) == g.cend());
+      REQUIRE(g.IsConnected(1, 5) == false);
+      REQUIRE(g.find(1, 5, -1) == g.cend());
     }
     THEN("Erase can remove an edge in the middle successfully") {
       REQUIRE(g.NumEdges() == 10);
-      REQUIRE(g.IsConnected(4,5) == true);
-      REQUIRE(g.find(4,5,3) != g.cend());
-      auto it = g.erase(g.find(4,5,3));
-      REQUIRE(*it == std::make_tuple(6,2,5));
+      REQUIRE(g.IsConnected(4, 5) == true);
+      REQUIRE(g.find(4, 5, 3) != g.cend());
+      auto it = g.erase(g.find(4, 5, 3));
+      REQUIRE(*it == std::make_tuple(6, 2, 5));
       REQUIRE(g.NumEdges() == 9);
-      REQUIRE(g.IsConnected(4,5) == false);
-      REQUIRE(g.find(4,5,3) == g.cend());
+      REQUIRE(g.IsConnected(4, 5) == false);
+      REQUIRE(g.find(4, 5, 3) == g.cend());
     }
     THEN("Erase can remove an edge at the end successfully") {
       REQUIRE(g.NumEdges() == 10);
-      REQUIRE(g.IsConnected(6,3) == true);
-      REQUIRE(g.find(6,3,10) != g.cend());
+      REQUIRE(g.IsConnected(6, 3) == true);
+      REQUIRE(g.find(6, 3, 10) != g.cend());
       auto it = g.erase(--g.cend());
       REQUIRE(it == g.cend());
       REQUIRE(g.NumEdges() == 9);
-      REQUIRE(g.IsConnected(6,3) == false);
-      REQUIRE(g.find(6,3,10) == g.cend());
+      REQUIRE(g.IsConnected(6, 3) == false);
+      REQUIRE(g.find(6, 3, 10) == g.cend());
     }
   }
 }
-
-
 
 SCENARIO("Const graphs can call appropriate const member functions") {
   GIVEN("Const graph with some nodes and edges") {
@@ -1056,27 +1092,25 @@ SCENARIO("Const graphs can call appropriate const member functions") {
     REQUIRE(g_creator.InsertEdge(6, 2, 5) == true);
     REQUIRE(g_creator.InsertEdge(6, 2, -10) == true);
     const gdwg::Graph<int, int> g = g_creator;
-    THEN("IsNode works") {
-      REQUIRE(g.IsNode(2) == true);
-    }
-    THEN("IsConnected works") {
-      REQUIRE(g.IsConnected(1,5) == true);
-    }
+    THEN("IsNode works") { REQUIRE(g.IsNode(2) == true); }
+    THEN("IsConnected works") { REQUIRE(g.IsConnected(1, 5) == true); }
     THEN("GetNodes works") {
-      REQUIRE_THAT(g.GetNodes(), Catch::Matchers::Equals(std::vector<int>{1,2,3,4,5,6}));
+      REQUIRE_THAT(g.GetNodes(), Catch::Matchers::Equals(std::vector<int>{1, 2, 3, 4, 5, 6}));
     }
     THEN("GetConnected works") {
-      REQUIRE_THAT(g.GetConnected(4), Catch::Matchers::Equals(std::vector<int>{1,5}));
+      REQUIRE_THAT(g.GetConnected(4), Catch::Matchers::Equals(std::vector<int>{1, 5}));
     }
     THEN("GetWeights works") {
-      REQUIRE_THAT(g.GetWeights(6,2), Catch::Matchers::Equals(std::vector<int>{-10,5}));
+      REQUIRE_THAT(g.GetWeights(6, 2), Catch::Matchers::Equals(std::vector<int>{-10, 5}));
     }
     THEN("Find works") {
-      auto it = g.find(2,4,2);
-      REQUIRE(*it == std::make_tuple(2,4,2));
+      auto it = g.find(2, 4, 2);
+      REQUIRE(*it == std::make_tuple(2, 4, 2));
     }
     THEN("Iterators contain correct order of edges") {
-      std::vector<std::tuple<int, int, int>> expected_edges = {{1,5,-1}, {2,1,1}, {2,4,2}, {3,2,2}, {3,6,-8}, {4,1,-4}, {4,5,3}, {5,2,7}, {6,2,-10}, {6,2,5}, {6,3,10}};
+      std::vector<std::tuple<int, int, int>> expected_edges = {
+          {1, 5, -1}, {2, 1, 1}, {2, 4, 2},   {3, 2, 2}, {3, 6, -8}, {4, 1, -4},
+          {4, 5, 3},  {5, 2, 7}, {6, 2, -10}, {6, 2, 5}, {6, 3, 10}};
       THEN("Edges are as expected when using preincrement") {
         int i = 0;
         for (auto it = g.rbegin(); it != g.rend(); ++it) {
@@ -1085,7 +1119,7 @@ SCENARIO("Const graphs can call appropriate const member functions") {
       }
       THEN("Edges are as expected when using preincrement") {
         int i = 0;
-        for(auto it = g.begin(); it != g.cend(); ++it) {
+        for (auto it = g.begin(); it != g.cend(); ++it) {
           REQUIRE(*it == expected_edges[i++]);
         }
       }
@@ -1097,8 +1131,6 @@ SCENARIO("Const graphs can call appropriate const member functions") {
       g_creator.DeleteNode(181);
       REQUIRE(g == g_creator);
     }
-    THEN("Operator != works") {
-      REQUIRE_FALSE(g != g_creator);
-    }
+    THEN("Operator != works") { REQUIRE_FALSE(g != g_creator); }
   }
 }

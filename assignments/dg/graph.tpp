@@ -8,7 +8,7 @@ namespace gdwg {
 
 template <typename N, typename E>
 bool Graph<N, E>::InsertNode(const N& val) {
-  if(edge_map_.find(Node{val}) != edge_map_.end()) {
+  if (edge_map_.find(Node{val}) != edge_map_.end()) {
     return false;
   }
   Node new_node{val};
@@ -17,28 +17,27 @@ bool Graph<N, E>::InsertNode(const N& val) {
   return true;
 }
 
-
 template <typename N, typename E>
 bool Graph<N, E>::InsertEdge(const N& src, const N& dst, const E& w) {
   if (!IsNode(src) || !IsNode(dst)) {
-    throw std::runtime_error("Cannot call Graph::InsertEdge when either src or dst node does not exist");
+    throw std::runtime_error(
+        "Cannot call Graph::InsertEdge when either src or dst node does not exist");
   }
 
   Node src_node = edge_map_.find(Node{src})->first;
   Node dst_node = edge_map_.find(Node{dst})->first;
-  Edge e{src_node.get(),dst_node.get(),std::make_shared<E>(w)};
+  Edge e{src_node.get(), dst_node.get(), std::make_shared<E>(w)};
 
-  //std::cout << "Inserting Edge: " << *src_sp << " " << *dst_sp << " " << w << "\n";
+  // std::cout << "Inserting Edge: " << *src_sp << " " << *dst_sp << " " << w << "\n";
   std::set<Edge, EdgeCmp>& edge_set = edge_map_.find(Node{src})->second;
-  for(const Edge& edge : edge_set) {
-    if(*edge.src_.lock() == src && *edge.dst_.lock() == dst && *edge.weight_ == w) {
+  for (const Edge& edge : edge_set) {
+    if (*edge.src_.lock() == src && *edge.dst_.lock() == dst && *edge.weight_ == w) {
       return false;
     }
   }
   edge_set.insert(e);
   return true;
 }
-
 
 template <typename N, typename E>
 bool Graph<N, E>::DeleteNode(const N& node) noexcept {
@@ -47,8 +46,8 @@ bool Graph<N, E>::DeleteNode(const N& node) noexcept {
   }
   edge_map_.erase(Node{node});
   for (auto it = edge_map_.begin(); it != edge_map_.end(); ++it) {
-    std::set<Edge,EdgeCmp>& edge_set = it->second;
-    for(auto edge_it = edge_set.begin(); edge_it != edge_set.end();) {
+    std::set<Edge, EdgeCmp>& edge_set = it->second;
+    for (auto edge_it = edge_set.begin(); edge_it != edge_set.end();) {
       if (edge_it->dst_.expired()) {
         edge_it = edge_set.erase(edge_it);
       } else {
@@ -59,37 +58,34 @@ bool Graph<N, E>::DeleteNode(const N& node) noexcept {
   return true;
 }
 
-
 template <typename N, typename E>
 bool Graph<N, E>::IsNode(const N& val) const noexcept {
   return (edge_map_.find(Node{val}) != edge_map_.end());
 }
 
-
 template <typename N, typename E>
 bool Graph<N, E>::IsConnected(const N& src, const N& dst) const {
-  if(!IsNode(src) || !IsNode(dst)) {
-    throw std::runtime_error("Cannot call Graph::IsConnected if src or dst node don't exist in the graph");
+  if (!IsNode(src) || !IsNode(dst)) {
+    throw std::runtime_error(
+        "Cannot call Graph::IsConnected if src or dst node don't exist in the graph");
   }
   std::set<Edge, EdgeCmp> edge_set = edge_map_.find(Node{src})->second;
-  for(const auto &[from, to, weight] : edge_set) {
-    if(dst == *to.lock()) {
+  for (const auto& [from, to, weight] : edge_set) {
+    if (dst == *to.lock()) {
       return true;
     }
   }
   return false;
 }
 
-
 template <typename N, typename E>
 std::vector<N> Graph<N, E>::GetNodes() const noexcept {
   std::vector<N> node_vector;
-  for(const auto& key : edge_map_) {
+  for (const auto& key : edge_map_) {
     node_vector.push_back(*key.first);
   }
   return node_vector;
 }
-
 
 template <typename N, typename E>
 std::vector<N> Graph<N, E>::GetConnected(const N& src) const {
@@ -97,32 +93,31 @@ std::vector<N> Graph<N, E>::GetConnected(const N& src) const {
     throw std::out_of_range("Cannot call Graph::GetConnected if src doesn't exist in the graph");
   }
   std::set<N> seen_nodes;
-  //std::set<Edge,
-  for(Edge e : edge_map_.find(Node{src})->second) {
+  // std::set<Edge,
+  for (Edge e : edge_map_.find(Node{src})->second) {
     seen_nodes.insert(*e.dst_.lock());
   }
   std::vector<N> connected_nodes{seen_nodes.begin(), seen_nodes.end()};
   return connected_nodes;
 }
 
-
 template <typename N, typename E>
 std::vector<E> Graph<N, E>::GetWeights(const N& src, const N& dst) const {
   if (!IsNode(src) || !IsNode(dst)) {
-    throw std::out_of_range("Cannot call Graph::GetWeights if src or dst node don't exist in the graph");
+    throw std::out_of_range(
+        "Cannot call Graph::GetWeights if src or dst node don't exist in the graph");
   }
   std::vector<E> weights;
-  for(Edge e : edge_map_.find(Node{src})->second) {
-    if(*e.dst_.lock() == dst) {
+  for (Edge e : edge_map_.find(Node{src})->second) {
+    if (*e.dst_.lock() == dst) {
       weights.push_back(*e.weight_);
     }
   }
   return weights;
 }
 
-
 template <typename N, typename E>
-bool Graph<N,E>::Replace(const N& oldData, const N& newData) {
+bool Graph<N, E>::Replace(const N& oldData, const N& newData) {
   if (edge_map_.find(Node{oldData}) == edge_map_.end()) {
     throw std::runtime_error("Cannot call Graph::Replace on a node that doesn't exist");
   } else if (edge_map_.find(Node{newData}) != edge_map_.end()) {
@@ -137,11 +132,11 @@ bool Graph<N,E>::Replace(const N& oldData, const N& newData) {
   return true;
 }
 
-
 template <typename N, typename E>
-void Graph<N,E>::MergeReplace(const N& oldData, const N& newData) {
+void Graph<N, E>::MergeReplace(const N& oldData, const N& newData) {
   if (!IsNode(oldData) || !IsNode(newData)) {
-    throw std::runtime_error("Cannot call Graph::MergeReplace on old or new data if they don't exist in the graph");
+    throw std::runtime_error(
+        "Cannot call Graph::MergeReplace on old or new data if they don't exist in the graph");
   }
 
   // get outgoing edges of src_node (src_node -> other_node)
@@ -154,7 +149,7 @@ void Graph<N,E>::MergeReplace(const N& oldData, const N& newData) {
   // get incoming edges of src_node (other_node -> src_node)
   // replace src_node with dest node and insert new edge into graph
   for (auto it = edge_map_.begin(); it != edge_map_.end(); ++it) {
-    std::set<Edge,EdgeCmp>& edge_set = it->second;
+    std::set<Edge, EdgeCmp>& edge_set = it->second;
     for (auto edge_it = edge_set.begin(); edge_it != edge_set.end();) {
       if (*edge_it->src_.lock() != newData && *edge_it->dst_.lock() == oldData) {
         InsertEdge(*edge_it->src_.lock(), newData, *edge_it->weight_);
@@ -169,31 +164,29 @@ void Graph<N,E>::MergeReplace(const N& oldData, const N& newData) {
 }
 
 // iterator methods
-//template <typename N, typename E>
-//bool Graph<N, E>::IsNode(const N& val) {
+// template <typename N, typename E>
+// bool Graph<N, E>::IsNode(const N& val) {
 //  return (edge_map_.find(Node{val}) != edge_map_.end());
 //}
 
 template <typename N, typename E>
-typename Graph<N, E>::const_iterator Graph<N, E>::cbegin() const noexcept{
-  auto first_edge_it = std::find_if(edge_map_.cbegin(), edge_map_.cend(),
-                                    []  (const std::pair<Node, std::set<Edge, EdgeCmp>>& item) {
-                                      return !item.second.empty();
-                                    });
-  return Graph<N,E>::const_iterator{first_edge_it, first_edge_it, edge_map_.cend()};
+typename Graph<N, E>::const_iterator Graph<N, E>::cbegin() const noexcept {
+  auto first_edge_it = std::find_if(
+      edge_map_.cbegin(), edge_map_.cend(),
+      [](const std::pair<Node, std::set<Edge, EdgeCmp>>& item) { return !item.second.empty(); });
+  return Graph<N, E>::const_iterator{first_edge_it, first_edge_it, edge_map_.cend()};
 }
 
 template <typename N, typename E>
 typename Graph<N, E>::const_iterator Graph<N, E>::cend() const noexcept {
-  auto first_edge_it = std::find_if(edge_map_.cbegin(), edge_map_.cend(),
-                                    []  (const std::pair<Node, std::set<Edge, EdgeCmp>>& item) {
-                                      return !item.second.empty();
-                                    });
-  return Graph<N,E>::const_iterator{edge_map_.cend(), first_edge_it, edge_map_.cend()};
+  auto first_edge_it = std::find_if(
+      edge_map_.cbegin(), edge_map_.cend(),
+      [](const std::pair<Node, std::set<Edge, EdgeCmp>>& item) { return !item.second.empty(); });
+  return Graph<N, E>::const_iterator{edge_map_.cend(), first_edge_it, edge_map_.cend()};
 }
 
-//template <typename N, typename E>
-//typename Graph<N,E>::const_iterator erase(typename Graph<N,E>::const_iterator it) {
+// template <typename N, typename E>
+// typename Graph<N,E>::const_iterator erase(typename Graph<N,E>::const_iterator it) {
 //  if(it == cend()) {
 //    return it;
 //  }
@@ -213,5 +206,4 @@ typename Graph<N, E>::const_iterator Graph<N, E>::cend() const noexcept {
 //  return find(src_next, dst_next, weight_next);
 //}
 
-
-}
+}  // namespace gdwg

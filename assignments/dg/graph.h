@@ -7,12 +7,11 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <tuple>
+#include <utility>
 #include <vector>
 
-
 namespace gdwg {
-
-
 
 template <typename N, typename E>
 class Graph {
@@ -22,42 +21,38 @@ class Graph {
     std::weak_ptr<N> dst_;
     std::shared_ptr<E> weight_;
     friend bool operator==(const Edge& lhs, const Edge& rhs) {
-      return *lhs.src_.lock() == *rhs.src_.lock() && *lhs.dst_.lock() == *rhs.dst_.lock() && *lhs.weight_ == *rhs.weight_;
+      return *lhs.src_.lock() == *rhs.src_.lock() && *lhs.dst_.lock() == *rhs.dst_.lock() &&
+             *lhs.weight_ == *rhs.weight_;
     }
   };
   class Node {
    public:
-    Node(N value) : sptr_{std::make_shared<N>(value)} {};
-    N& operator* () const { return *sptr_; }
+    explicit Node(N value) : sptr_{std::make_shared<N>(value)} {};
+    N& operator*() const { return *sptr_; }
     std::shared_ptr<N> get() const { return sptr_; }
 
-//    bool operator<(const Node& other) const {
-//      return *this < *other;
-//    }
-    friend bool operator==(const Node& lhs, const Node& rhs) {
-      return *lhs.sptr_ == *rhs.sptr_;
-    }
+    //    bool operator<(const Node& other) const {
+    //      return *this < *other;
+    //    }
+    friend bool operator==(const Node& lhs, const Node& rhs) { return *lhs.sptr_ == *rhs.sptr_; }
 
    private:
     std::shared_ptr<N> sptr_;
   };
 
-
   struct NodeCmp {
-    bool operator() (const Node& lhs, const Node& rhs) const {
-      return *lhs < *rhs;
-    }
+    bool operator()(const Node& lhs, const Node& rhs) const { return *lhs < *rhs; }
   };
 
   // this is the comparison as well as the ordering function for the set, cant seperate the two
   struct EdgeCmp {
-    bool operator() (const Edge lhs, const Edge rhs) const {
+    bool operator()(const Edge lhs, const Edge rhs) const {
       N src1 = *lhs.src_.lock();
       N src2 = *rhs.src_.lock();
       if (src1 == src2) {
         N dst1 = *lhs.dst_.lock();
         N dst2 = *rhs.dst_.lock();
-        if(dst1 == dst2) {
+        if (dst1 == dst2) {
           E w1 = *lhs.weight_;
           E w2 = *rhs.weight_;
           return w1 < w2;
@@ -71,13 +66,13 @@ class Graph {
  public:
   Graph() : edge_map_() {}
   Graph(typename std::vector<N>::const_iterator start, typename std::vector<N>::const_iterator end)
-      : Graph() {
+    : Graph() {
     for (auto it = start; it != end; it++)
       InsertNode(*start++);
   }
   Graph(typename std::vector<std::tuple<N, N, E>>::const_iterator start,
         typename std::vector<std::tuple<N, N, E>>::const_iterator end)
-      : Graph() {
+    : Graph() {
     for (auto it = start; it != end; ++it) {
       N src;
       N dst;
@@ -93,9 +88,7 @@ class Graph {
     for (auto it = std::begin(il); it != std::end(il); ++it)
       InsertNode(*it);
   }
-  Graph(const Graph& other) : Graph() {
-    edge_map_ = other.edge_map_;
-  }
+  Graph(const Graph& other) : Graph() { edge_map_ = other.edge_map_; }
   Graph(Graph&& other) : Graph() {
     edge_map_ = std::move(other.edge_map_);
     other.Clear();
@@ -125,7 +118,6 @@ class Graph {
     return *this;
   }
 
-
   class const_iterator {
    public:
     using iterator_category = std::bidirectional_iterator_tag;
@@ -136,9 +128,9 @@ class Graph {
 
     reference operator*() const {
       Edge cur = *inner_;
-//      if(cur.src.expired() || cur.dst.expired()) {
-//        std::cout << "Expired ... " << std::endl;
-//      }
+      //      if(cur.src.expired() || cur.dst.expired()) {
+      //        std::cout << "Expired ... " << std::endl;
+      //      }
       return {*cur.src_.lock(), *cur.dst_.lock(), *cur.weight_};
     }
 
@@ -147,9 +139,9 @@ class Graph {
     const_iterator operator++() {
       // Undefined behaviour if ++ on end()
       ++inner_;
-      if(inner_ == outer_->second.cend()) {
+      if (inner_ == outer_->second.cend()) {
         // skip nodes with no edges
-        while(++outer_ == outer_end_ || outer_->second.empty()) {
+        while (++outer_ == outer_end_ || outer_->second.empty()) {
           // or else keeps looping forever
           if (outer_ == outer_end_) {
             inner_ = (--outer_)->second.cend();
@@ -170,14 +162,16 @@ class Graph {
 
     const_iterator operator--() {
       // assuming more than one edge in graph, else unexpected behaviour
-      if(outer_ == outer_end_) {
+      if (outer_ == outer_end_) {
         --outer_;
         inner_ = outer_->second.cend();
       }
-      if(inner_ == outer_->second.cbegin()) {
+      if (inner_ == outer_->second.cbegin()) {
         // skip all empty nodes
-        while(outer_ == outer_begin_ || (--outer_)->second.empty()) {
-          if (outer_ == outer_begin_) { return *this; }
+        while (outer_ == outer_begin_ || (--outer_)->second.empty()) {
+          if (outer_ == outer_begin_) {
+            return *this;
+          }
         }
         inner_ = outer_->second.cend();
       }
@@ -206,9 +200,12 @@ class Graph {
 
     friend class Graph;
 
-    explicit const_iterator(const decltype(outer_)& outer,  const decltype(outer_begin_)& outer_begin, const decltype(outer_end_)& outer_end) : outer_ {outer}, outer_begin_{outer_begin}, outer_end_{outer_end} {
+    explicit const_iterator(const decltype(outer_)& outer,
+                            const decltype(outer_begin_)& outer_begin,
+                            const decltype(outer_end_)& outer_end)
+      : outer_{outer}, outer_begin_{outer_begin}, outer_end_{outer_end} {
       // instead of passing in inner index, we can do this instead to deduce the inner index
-      if(outer_begin_ == outer_end_) {
+      if (outer_begin_ == outer_end_) {
         // if empty graph, dont do anything (everything is undefined behaviour)
       } else if (outer_ == outer_end_) {
         // cend is sent in, so set end indexes
@@ -221,7 +218,7 @@ class Graph {
     }
   };
 
-// methods
+  // methods
   bool InsertNode(const N& val);
   bool InsertEdge(const N& src, const N& dst, const E& w);
   bool DeleteNode(const N& node) noexcept;
@@ -234,15 +231,12 @@ class Graph {
   void MergeReplace(const N& oldData, const N& newData);
   const_iterator cbegin() const noexcept;
   const_iterator cend() const noexcept;
-// iterator methods
+  // iterator methods
 
-  void Clear() {
-    edge_map_.clear();
-  }
-
+  void Clear() { edge_map_.clear(); }
 
   const_iterator find(const N& src, const N& dst, const E& weight) const noexcept {
-    for(auto it = cbegin(); it != cend(); ++it) {
+    for (auto it = cbegin(); it != cend(); ++it) {
       if (*it == std::tie(src, dst, weight)) {
         return it;
       }
@@ -250,44 +244,42 @@ class Graph {
     return cend();
   }
 
-
   bool erase(const N& src, const N& dst, const E& w) noexcept {
     // if edge exists, delete it and return true. Else, false
     auto it = edge_map_.find(Node{src});
-    if(it == edge_map_.end()) {
+    if (it == edge_map_.end()) {
       return false;
     }
 
     std::set<Edge, EdgeCmp>& edge_set = it->second;
-    auto edge_it = std::find_if(edge_set.cbegin(), edge_set.cend(),
-                                [=] (const Edge& e) {
-                                  return *e.dst_.lock() == dst && *e.weight_ == w;
-                                });
+    auto edge_it = std::find_if(edge_set.cbegin(), edge_set.cend(), [=](const Edge& e) {
+      return *e.dst_.lock() == dst && *e.weight_ == w;
+    });
 
-    if(edge_it == edge_set.end()) {
+    if (edge_it == edge_set.end()) {
       return false;
     } else {
       edge_set.erase(edge_it);
       return true;
     }
-//      if(*edge.dst.lock() == dst && *edge.weight == w) {
-//        edge_set.erase(edge);
-//        erased = true;
-//        break;
-//      }
-//    }
-//    return erased;
+    //      if(*edge.dst.lock() == dst && *edge.weight == w) {
+    //        edge_set.erase(edge);
+    //        erased = true;
+    //        break;
+    //      }
+    //    }
+    //    return erased;
   }
 
   const_iterator erase(const_iterator it) noexcept {
-    if(it == cend()) {
+    if (it == cend()) {
       return it;
     }
     N src;
     N dst;
     E weight;
     std::tie(src, dst, weight) = *it++;
-    if(it == cend()) {
+    if (it == cend()) {
       erase(src, dst, weight);
       return cend();
     }
@@ -302,26 +294,25 @@ class Graph {
   const_iterator begin() const noexcept { return cbegin(); }
   const_iterator end() const noexcept { return cend(); }
 
-
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
   const_reverse_iterator rbegin() const noexcept { return crbegin(); }
   const_reverse_iterator rend() const noexcept { return crend(); }
   const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator{cend()}; }
   const_reverse_iterator crend() const noexcept { return const_reverse_iterator{cbegin()}; }
 
-// friends
+  // friends
 
   friend bool operator==(const gdwg::Graph<N, E>& g1, const gdwg::Graph<N, E>& g2) noexcept {
     return g1.edge_map_ == g2.edge_map_;
   }
   friend bool operator!=(const gdwg::Graph<N, E>& g1, const gdwg::Graph<N, E>& g2) noexcept {
-    return !(g1==g2);
+    return !(g1 == g2);
   }
   friend std::ostream& operator<<(std::ostream& os, const gdwg::Graph<N, E>& g) noexcept {
-    for(const auto &[key, val]  : g.edge_map_) {
+    for (const auto& [key, val] : g.edge_map_) {
       std::cout << *key << " (\n";
       std::set<Edge, EdgeCmp> node_to_edge = val;
-      for(const auto &[src, dst, weight] : node_to_edge) {
+      for (const auto& [src, dst, weight] : node_to_edge) {
         std::cout << "  " << *dst.lock() << " | " << *weight << "\n";
       }
       std::cout << ")\n";
@@ -329,14 +320,10 @@ class Graph {
     return os;
   }
 
-// common methods (not in spec)
-  bool IsEmpty() const noexcept {
-    return edge_map_.empty();
-  }
+  // common methods (not in spec)
+  bool IsEmpty() const noexcept { return edge_map_.empty(); }
 
-  size_t NumNodes() const noexcept {
-    return edge_map_.size();
-  }
+  size_t NumNodes() const noexcept { return edge_map_.size(); }
 
   size_t NumEdges() const noexcept {
     size_t sum = 0;
@@ -345,15 +332,11 @@ class Graph {
     return sum;
   }
 
-
-
  private:
   std::map<Node, std::set<Edge, EdgeCmp>, NodeCmp> edge_map_;
 };
 
 }  // namespace gdwg
-
-
 
 #include "assignments/dg/graph.tpp"
 
