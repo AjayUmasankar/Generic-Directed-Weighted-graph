@@ -170,5 +170,50 @@ void Graph<N,E>::MergeReplace(const N& oldData, const N& newData) {
   DeleteNode(oldData);
 }
 
+// iterator methods
+//template <typename N, typename E>
+//bool Graph<N, E>::IsNode(const N& val) {
+//  return (edge_map.find(Node{val}) != edge_map.end());
+//}
+
+template <typename N, typename E>
+typename Graph<N, E>::const_iterator Graph<N, E>::cbegin() const {
+  auto first_edge_it = std::find_if(edge_map.cbegin(), edge_map.cend(),
+                                    []  (const std::pair<Node, std::set<Edge, EdgeCmp>>& item) {
+                                      return !item.second.empty();
+                                    });
+  return Graph<N,E>::const_iterator{first_edge_it, first_edge_it, edge_map.cend()};
+}
+
+template <typename N, typename E>
+typename Graph<N, E>::const_iterator Graph<N, E>::cend() const {
+  auto first_edge_it = std::find_if(edge_map.cbegin(), edge_map.cend(),
+                                    []  (const std::pair<Node, std::set<Edge, EdgeCmp>>& item) {
+                                      return !item.second.empty();
+                                    });
+  return Graph<N,E>::const_iterator{edge_map.cend(), first_edge_it, edge_map.cend()};
+}
+
+//template <typename N, typename E>
+//typename Graph<N,E>::const_iterator erase(typename Graph<N,E>::const_iterator it) {
+//  if(it == cend()) {
+//    return it;
+//  }
+//  N src;
+//  N dst;
+//  E weight;
+//  std::tie(src, dst, weight) = *it++;
+//  if(it == cend()) {
+//    erase(src, dst, weight);
+//    return cend();
+//  }
+//  N src_next;
+//  N dst_next;
+//  E weight_next;
+//  std::tie(src_next, dst_next, weight_next) = *it;
+//  erase(src, dst, weight);
+//  return find(src_next, dst_next, weight_next);
+//}
+
 
 }

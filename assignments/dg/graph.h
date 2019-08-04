@@ -7,6 +7,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 namespace gdwg {
 
@@ -66,9 +67,9 @@ class Graph {
     N& operator* () const { return *node_sp; }
     std::shared_ptr<N> get() const { return node_sp; }
 
-    bool operator<(const Node& other) const {
-      return *this < *other;
-    }
+//    bool operator<(const Node& other) const {
+//      return *this < *other;
+//    }
     friend bool operator==(const Node& lhs, const Node& rhs) {
       return *lhs.node_sp == *rhs.node_sp;
     }
@@ -121,29 +122,29 @@ class Graph {
     using difference_type = int;
 
     reference operator*() const {
-      Edge cur = *index_;
-      if(cur.src.expired() || cur.dst.expired()) {
-        std::cout << "Expired ... " << std::endl;
-      }
+      Edge cur = *inner_;
+//      if(cur.src.expired() || cur.dst.expired()) {
+//        std::cout << "Expired ... " << std::endl;
+//      }
       return {*cur.src.lock(), *cur.dst.lock(), *cur.weight};
     }
 
     pointer operator->() const { return &(operator*()); }
 
     const_iterator operator++() {
-      ++index_;
-      if(index_ == index_outer_->second.cend()) {
-        // if the Node's set of outgoing edges is empty, keep going to next node
-        while(++index_outer_ == index_outer_end_ || index_outer_->second.empty()) {
-          std::cout << "HELLO" << std::endl;
+      // Undefined behaviour if ++ on end()
+      ++inner_;
+      if(inner_ == outer_->second.cend()) {
+        // skip nodes with no edges
+        while(++outer_ == outer_end_ || outer_->second.empty()) {
           // or else keeps looping forever
-          if (index_outer_ == index_outer_end_) {
-            index_ = (--index_outer_)->second.cend();
-            ++index_outer_;
+          if (outer_ == outer_end_) {
+            inner_ = (--outer_)->second.cend();
+            ++outer_;
             return *this;
           }
         }
-        index_ = index_outer_->second.cbegin();
+        inner_ = outer_->second.cbegin();
       }
       return *this;
     }
@@ -156,17 +157,18 @@ class Graph {
 
     const_iterator operator--() {
       // assuming more than one edge in graph, else unexpected behaviour
-      if(index_outer_ == index_outer_end_) {
-        --index_outer_;
-        index_ = index_outer_->second.cend();
+      if(outer_ == outer_end_) {
+        --outer_;
+        inner_ = outer_->second.cend();
       }
-      if(index_ == index_outer_->second.cbegin()) {
-        while(index_outer_ == index_outer_begin_ || (--index_outer_)->second.empty()) {
-          if (index_outer_ == index_outer_begin_) { return *this; }
+      if(inner_ == outer_->second.cbegin()) {
+        // skip all empty nodes
+        while(outer_ == outer_begin_ || (--outer_)->second.empty()) {
+          if (outer_ == outer_begin_) { return *this; }
         }
-        index_ = index_outer_->second.cend();
+        inner_ = outer_->second.cend();
       }
-      --index_;
+      --inner_;
       return *this;
     }
     const_iterator operator--(int) {
@@ -176,8 +178,7 @@ class Graph {
     }
 
     friend bool operator==(const const_iterator& lhs, const const_iterator& rhs) {
-      // TODO comparing iterators of same graph only?
-      return lhs.index_outer_ == rhs.index_outer_ && lhs.index_ == rhs.index_;
+      return lhs.outer_ == rhs.outer_ && lhs.inner_ == rhs.inner_;
     }
 
     friend bool operator!=(const const_iterator& lhs, const const_iterator& rhs) {
@@ -185,26 +186,26 @@ class Graph {
     }
 
    private:
-    // TODO: could send in edge_map instead of begin and end?
-    explicit const_iterator(typename std::map<Node, std::set<Edge, EdgeCmp>, NodeCmp>::const_iterator index_outer, typename std::map<Node, std::set<Edge, EdgeCmp>, NodeCmp>::const_iterator index_outer_begin, typename std::map<Node, std::set<Edge, EdgeCmp>, NodeCmp>::const_iterator index_outer_end) : index_outer_ {index_outer}, index_outer_begin_{index_outer_begin}, index_outer_end_{index_outer_end} {
-      if(index_outer_begin_ == index_outer_end_) {
-        // empty
-      } else if (index_outer_ == index_outer_end_) {
-        // cend is sent in, so set end indexes
-        index_ = (--index_outer_)->second.cend();
-        ++index_outer_;
-      } else if (index_outer_ == index_outer_begin_) {
-        index_ = index_outer_->second.cbegin();
-      }
-
-    }
-    typename std::map<Node, std::set<Edge, EdgeCmp>, NodeCmp>::const_iterator index_outer_;
-    typename std::map<Node, std::set<Edge, EdgeCmp>, NodeCmp>::const_iterator index_outer_begin_;
-    typename std::map<Node, std::set<Edge, EdgeCmp>, NodeCmp>::const_iterator index_outer_end_;
-    typename std::set<Edge, EdgeCmp>::const_iterator index_;
+    typename std::map<Node, std::set<Edge, EdgeCmp>, NodeCmp>::const_iterator outer_;
+    const typename std::map<Node, std::set<Edge, EdgeCmp>, NodeCmp>::const_iterator outer_begin_;
+    const typename std::map<Node, std::set<Edge, EdgeCmp>, NodeCmp>::const_iterator outer_end_;
+    typename std::set<Edge, EdgeCmp>::const_iterator inner_;
 
     friend class Graph;
 
+    explicit const_iterator(const decltype(outer_)& outer,  const decltype(outer_begin_)& outer_begin, const decltype(outer_end_)& outer_end) : outer_ {outer}, outer_begin_{outer_begin}, outer_end_{outer_end} {
+      // instead of passing in inner index, we can do this instead to deduce the inner index
+      if(outer_begin_ == outer_end_) {
+        // if empty graph, dont do anything (everything is undefined behaviour)
+      } else if (outer_ == outer_end_) {
+        // cend is sent in, so set end indexes
+        inner_ = (--outer_)->second.cend();
+        ++outer_;
+      } else if (outer_ == outer_begin_) {
+        // cbegin is sent in, set first element index
+        inner_ = outer_->second.cbegin();
+      }
+    }
   };
 
 // methods
@@ -218,17 +219,16 @@ class Graph {
   std::vector<E> GetWeights(const N& src, const N& dst);
   bool Replace(const N& oldData, const N& newData);
   void MergeReplace(const N& oldData, const N& newData);
-
+  const_iterator cbegin() const;
+  const_iterator cend() const;
+// iterator methods
 
   void Clear() {
-    // TODO: Do we need to .reset() any pointers?
     edge_map.clear();
   }
 
-// iterator methods
 
   const_iterator find(const N& src, const N& dst, const E& weight) {
-    //std::tuple<N&, N&, E&> = std::tie(src, dst, weight);
     for(auto it = cbegin(); it != cend(); ++it) {
       if (*it == std::tie(src, dst, weight)) {
         return it;
@@ -237,8 +237,36 @@ class Graph {
     return cend();
   }
 
+
+  bool erase(const N& src, const N& dst, const E& w) {
+    // if edge exists, delete it and return true. Else, false
+    auto it = edge_map.find(Node{src});
+    if(it == edge_map.end()) {
+      return false;
+    }
+
+    std::set<Edge, EdgeCmp>& edge_set = it->second;
+    auto edge_it = std::find_if(edge_set.cbegin(), edge_set.cend(),
+                                [=] (const Edge& e) {
+                                  return *e.dst.lock() == dst && *e.weight == w;
+                                });
+
+    if(edge_it == edge_set.end()) {
+      return false;
+    } else {
+      edge_set.erase(edge_it);
+      return true;
+    }
+//      if(*edge.dst.lock() == dst && *edge.weight == w) {
+//        edge_set.erase(edge);
+//        erased = true;
+//        break;
+//      }
+//    }
+//    return erased;
+  }
+
   const_iterator erase(const_iterator it) {
-    // TODO edge case of removing iterator to last element maybe
     if(it == cend()) {
       return it;
     }
@@ -247,7 +275,8 @@ class Graph {
     E weight;
     std::tie(src, dst, weight) = *it++;
     if(it == cend()) {
-      return it;
+      erase(src, dst, weight);
+      return cend();
     }
     N src_next;
     N dst_next;
@@ -257,33 +286,11 @@ class Graph {
     return find(src_next, dst_next, weight_next);
   }
 
-  bool erase(const N& src, const N& dst, const E& w) {
-    //std::shared_ptr<N> src_sp = edge_map.find(Node{src})->first.get();
-    auto it = edge_map.find(Node{src});
-    if(it == edge_map.end()) {
-      return false;
-    }
-    bool erased = false;
-    std::set<Edge, EdgeCmp>& edge_set = it->second;
-    for (const auto& edge : edge_set) {
-      if(*edge.dst.lock() == dst && *edge.weight == w) {
-        edge_set.erase(edge);
-        erased = true;
-        break;
-      }
-    }
-    return erased;
-  }
-
-  // TODO: can all_edges be references
   const_iterator begin() const { return cbegin(); }
-  const_iterator cbegin() const { return const_iterator{edge_map.cbegin(), edge_map.cbegin(), edge_map.cend()};  }
   const_iterator end() const { return cend(); }
-  const_iterator cend() const {
-    return const_iterator{edge_map.cend(), edge_map.cbegin(), edge_map.cend()};
-  }
+
+
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-  // If you want const reverse iterators (hint: you do), define these.
   const_reverse_iterator rbegin() const { return crbegin(); }
   const_reverse_iterator rend() const { return crend(); }
   const_reverse_iterator crbegin() const { return const_reverse_iterator{cend()}; }
@@ -310,11 +317,6 @@ class Graph {
   }
 
   friend std::ostream& operator<<(std::ostream& os, const gdwg::Graph<N, E>& g) {
-//    std::set<Edge, EdgeCmp> node_to_edge = g.edge_map.find(node.get())->second;
-//    for(const auto &[src, dst, weight] : node_to_edge) {
-//      std::cout << "  " << *dst.lock() << " | " << *weight << "\n";
-//    }
-
     for(const auto &[key, val]  : g.edge_map) {
       std::cout << *key << " (\n";
       std::set<Edge, EdgeCmp> node_to_edge = val;

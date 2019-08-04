@@ -631,7 +631,40 @@ SCENARIO("Basic Graph iterator methods work as expected") {
       REQUIRE(*(--g.rend()) == std::make_tuple("c", "s", weight));
       REQUIRE(*(--g.crend()) == std::make_tuple("c", "s", weight));
     }
-
+  }
+  GIVEN("Graph with empty nodes at the start and end") {
+    gdwg::Graph<std::string, double> g;
+    std::string node00{"a"};
+    std::string node0{"b"};
+    std::string node1{"c"};
+    std::string node2{"s"};
+    std::string node3{"v"};
+    std::string node4{"w"};
+    std::string node5{"x"};
+    std::string node6{"z"};
+    int weight = 1;
+    REQUIRE(g.InsertNode(node1) == true);
+    REQUIRE(g.InsertNode(node2) == true);
+    REQUIRE(g.InsertNode(node3) == true);
+    REQUIRE(g.InsertNode(node4) == true);
+    REQUIRE(g.InsertNode(node5) == true);
+    REQUIRE(g.InsertNode(node6) == true);
+    REQUIRE(g.InsertNode(node00) == true);
+    REQUIRE(g.InsertNode(node0) == true);
+    REQUIRE(g.InsertEdge(node1, node2, weight) == true);
+    REQUIRE(g.InsertEdge(node2, node3, weight) == true);
+    REQUIRE(g.InsertEdge(node2, node3, -weight) == true);
+    REQUIRE(g.InsertEdge(node2, node2, weight) == true);
+    THEN("Begin and End variations act as described in spec") {
+      REQUIRE(*g.begin() == std::make_tuple("c", "s", weight));
+      REQUIRE(*g.cbegin() == std::make_tuple("c", "s", weight));
+      REQUIRE(*g.rbegin() == std::make_tuple("s", "v", weight));
+      REQUIRE(*g.crbegin() == std::make_tuple("s", "v", weight));
+      REQUIRE(*(--g.end()) == std::make_tuple("s", "v", weight));
+      REQUIRE(*(--g.cend()) == std::make_tuple("s", "v", weight));
+      REQUIRE(*(--g.rend()) == std::make_tuple("c", "s", weight));
+      REQUIRE(*(--g.crend()) == std::make_tuple("c", "s", weight));
+    }
   }
 
 }
@@ -639,22 +672,31 @@ SCENARIO("Basic Graph iterator methods work as expected") {
 SCENARIO("Graph iterator navigates edges in correct order") {
   GIVEN("Graph with some nodes and edges, and expected edge order") {
     gdwg::Graph<int, int> g;
-    g.InsertNode(3);
-    g.InsertNode(5);
-    g.InsertNode(4);
-    g.InsertNode(1);
-    g.InsertNode(2);
-    g.InsertNode(6);
-    g.InsertEdge(1, 5, -1);
-    g.InsertEdge(4, 1, -4);
-    g.InsertEdge(4, 5, 3);
-    g.InsertEdge(2, 4, 2);
-    g.InsertEdge(2, 1, 1);
-    g.InsertEdge(5, 2, 7);
-    g.InsertEdge(3, 2, 2);
-    g.InsertEdge(6, 3, 10);
-    g.InsertEdge(3, 6, -8);
-    g.InsertEdge(6, 2, 5);
+    // filler nodes, shouldnt impact anything
+    REQUIRE(g.InsertNode(0) == true);
+    REQUIRE(g.InsertNode(7) == true);
+    REQUIRE(g.InsertNode(18) == true);
+    REQUIRE(g.InsertNode(21) == true);
+    REQUIRE(g.InsertNode(-5) == true);
+    REQUIRE(g.InsertNode(-22) == true);
+
+    REQUIRE(g.InsertNode(3) == true);
+    REQUIRE(g.InsertNode(5) == true);
+    REQUIRE(g.InsertNode(4) == true);
+    REQUIRE(g.InsertNode(1) == true);
+    REQUIRE(g.InsertNode(2) == true);
+    REQUIRE(g.InsertNode(6) == true);
+    REQUIRE(g.InsertEdge(1, 5, -1) == true);
+    REQUIRE(g.InsertEdge(4, 1, -4) == true);
+    REQUIRE(g.InsertEdge(4, 5, 3) == true);
+    REQUIRE(g.InsertEdge(2, 4, 2) == true);
+    REQUIRE(g.InsertEdge(2, 1, 1) == true);
+    REQUIRE(g.InsertEdge(5, 2, 7) == true);
+    REQUIRE(g.InsertEdge(3, 2, 2) == true);
+    REQUIRE(g.InsertEdge(6, 3, 10) == true);
+    REQUIRE(g.InsertEdge(3, 6, -8) == true);
+    REQUIRE(g.InsertEdge(6, 2, 5) == true);
+    // 10 edges
     std::vector<std::tuple<int, int, int>> expected_edges = {{1,5,-1}, {2,1,1}, {2,4,2}, {3,2,2}, {3,6,-8}, {4,1,-4}, {4,5,3}, {5,2,7}, {6,2,5}, {6,3,10}};
     WHEN("Normal iterator is used to iterate through edges") {
       THEN("Edges are as expected when using preincrement") {
@@ -668,6 +710,7 @@ SCENARIO("Graph iterator navigates edges in correct order") {
         for(auto it = g.begin(); it != g.end(); it++) {
           REQUIRE(*it == expected_edges[i++]);
         }
+        REQUIRE(i == 10);
       }
       THEN("Edges are as expected when using predecrement"){
         int i = 0;
@@ -680,6 +723,7 @@ SCENARIO("Graph iterator navigates edges in correct order") {
         for(auto it = --g.end(); it != g.begin(); it--) {
           REQUIRE(*it == expected_edges[9-i++]);
         }
+        REQUIRE(i == 9);
       }
     }
     WHEN("Reverse iterator is used to iterate through edges") {
@@ -710,6 +754,154 @@ SCENARIO("Graph iterator navigates edges in correct order") {
     }
   }
 }
+
+SCENARIO("Graph find works as expected") {
+  gdwg::Graph<int, int> g;
+  GIVEN("Graph with no edges") {
+    REQUIRE(g.InsertNode(1) == true);
+    REQUIRE(g.InsertNode(88) == true);
+    REQUIRE(g.numEdges() == 0);
+    THEN("Find returns g.end() when called") {
+      auto it = g.find(1,88,0);
+      REQUIRE(it == g.end());
+      REQUIRE(g.numEdges() == 0);
+    }
+  }
+  GIVEN("Graph with one edge") {
+    REQUIRE(g.InsertNode(1) == true);
+    REQUIRE(g.InsertNode(88) == true);
+    REQUIRE(g.InsertEdge(1,88,1) == true);
+    REQUIRE(g.numEdges() == 1);
+    REQUIRE(g.IsConnected(1,88) == true);
+    THEN("Find can find the edge successfully with no side effects") {
+      auto it = g.find(1,88,1);
+      REQUIRE(it != g.cend());
+      REQUIRE(g.numEdges() == 1);
+      REQUIRE(g.IsConnected(1,88) == true);
+    }
+    THEN("Find fails when searching for nonexistant edge") {
+      auto it = g.find(1,88,2);
+      REQUIRE(it == g.cend());
+    }
+  }
+  GIVEN("Graph with many edges") {
+    REQUIRE(g.InsertNode(0) == true);
+    REQUIRE(g.InsertNode(3) == true);
+    REQUIRE(g.InsertNode(5) == true);
+    REQUIRE(g.InsertNode(4) == true);
+    REQUIRE(g.InsertNode(1) == true);
+    REQUIRE(g.InsertNode(2) == true);
+    REQUIRE(g.InsertNode(6) == true);
+    REQUIRE(g.InsertNode(87) == true);
+    REQUIRE(g.InsertNode(7) == true);
+    REQUIRE(g.InsertNode(-1) == true);
+    REQUIRE(g.InsertEdge(1, 5, -1) == true);
+    REQUIRE(g.InsertEdge(4, 1, -4) == true);
+    REQUIRE(g.InsertEdge(4, 5, 3) == true);
+    REQUIRE(g.InsertEdge(2, 4, 2) == true);
+    REQUIRE(g.InsertEdge(2, 1, 1) == true);
+    REQUIRE(g.InsertEdge(4, 2, 7) == true);
+    REQUIRE(g.InsertEdge(3, 2, 2) == true);
+    REQUIRE(g.InsertEdge(6, 3, 10) == true);
+    REQUIRE(g.InsertEdge(3, 6, -8) == true);
+    REQUIRE(g.InsertEdge(6, 2, 5) == true);
+    REQUIRE(g.numEdges() == 10);
+    THEN("Find can find first edge successfully") {
+      auto it = g.find(1,5,-1);
+      REQUIRE(*it == std::make_tuple(1, 5, -1));
+    }
+    THEN("Find can find a (random) edge successfully") {
+      auto it = g.find(4,5,3);
+      REQUIRE(*it == std::make_tuple(4, 5, 3));
+    }
+    THEN("Find can find last edge successfully") {
+      auto it = g.find(6,3,10);
+      REQUIRE(*it == std::make_tuple(6, 3, 10));
+    }
+  }
+}
+
+SCENARIO("Graph erase(iterator) works as expected") {
+  gdwg::Graph<int, int> g;
+  GIVEN("Graph with no edges") {
+    REQUIRE(g.InsertNode(1) == true);
+    REQUIRE(g.InsertNode(88) == true);
+    REQUIRE(g.numEdges() == 0);
+    THEN("Erase returns g.end() when called") {
+      auto it = g.erase(g.cbegin());
+      REQUIRE(it == g.end());
+      REQUIRE(g.numEdges() == 0);
+    }
+  }
+  GIVEN("Graph with one edge") {
+    REQUIRE(g.InsertNode(1) == true);
+    REQUIRE(g.InsertNode(88) == true);
+    REQUIRE(g.InsertEdge(1,88,1) == true);
+    REQUIRE(g.numEdges() == 1);
+    REQUIRE(g.IsConnected(1,88) == true);
+    THEN("Erase can remove first edge successfully") {
+      auto it = g.erase(g.cbegin());
+      REQUIRE(it == g.cend());
+      REQUIRE(g.numEdges() == 0);
+      REQUIRE(g.IsConnected(1,88) == false);
+    }
+  }
+  GIVEN("Graph with many edges") {
+    REQUIRE(g.InsertNode(0) == true);
+    REQUIRE(g.InsertNode(3) == true);
+    REQUIRE(g.InsertNode(5) == true);
+    REQUIRE(g.InsertNode(4) == true);
+    REQUIRE(g.InsertNode(1) == true);
+    REQUIRE(g.InsertNode(2) == true);
+    REQUIRE(g.InsertNode(6) == true);
+    REQUIRE(g.InsertNode(87) == true);
+    REQUIRE(g.InsertNode(7) == true);
+    REQUIRE(g.InsertNode(-1) == true);
+    REQUIRE(g.InsertEdge(1, 5, -1) == true);
+    REQUIRE(g.InsertEdge(4, 1, -4) == true);
+    REQUIRE(g.InsertEdge(4, 5, 3) == true);
+    REQUIRE(g.InsertEdge(2, 4, 2) == true);
+    REQUIRE(g.InsertEdge(2, 1, 1) == true);
+    REQUIRE(g.InsertEdge(4, 2, 7) == true);
+    REQUIRE(g.InsertEdge(3, 2, 2) == true);
+    REQUIRE(g.InsertEdge(6, 3, 10) == true);
+    REQUIRE(g.InsertEdge(3, 6, -8) == true);
+    REQUIRE(g.InsertEdge(6, 2, 5) == true);
+    REQUIRE(g.numEdges() == 10);
+    // successfully here implies no side effects (
+    THEN("Erase can remove first edge successfully") {
+      REQUIRE(g.IsConnected(1,5) == true);
+      REQUIRE(g.find(1,5,-1) != g.cend());
+      auto it = g.erase(g.cbegin());
+      REQUIRE(*it == std::make_tuple(2, 1, 1));
+      REQUIRE(g.numEdges() == 9);
+      REQUIRE(g.IsConnected(1,5) == false);
+      REQUIRE(g.find(1,5,-1) == g.cend());
+    }
+    THEN("Erase can remove an edge in the middle successfully") {
+      REQUIRE(g.numEdges() == 10);
+      REQUIRE(g.IsConnected(4,5) == true);
+      REQUIRE(g.find(4,5,3) != g.cend());
+      auto it = g.erase(g.find(4,5,3));
+      REQUIRE(*it == std::make_tuple(6,2,5));
+      REQUIRE(g.numEdges() == 9);
+      REQUIRE(g.IsConnected(4,5) == false);
+      REQUIRE(g.find(4,5,3) == g.cend());
+    }
+    THEN("Erase can remove an edge at the end successfully") {
+      REQUIRE(g.numEdges() == 10);
+      REQUIRE(g.IsConnected(6,3) == true);
+      REQUIRE(g.find(6,3,10) != g.cend());
+      auto it = g.erase(--g.cend());
+      REQUIRE(it == g.cend());
+      REQUIRE(g.numEdges() == 9);
+      REQUIRE(g.IsConnected(6,3) == false);
+      REQUIRE(g.find(6,3,10) == g.cend());
+    }
+  }
+}
+
+
 
 SCENARIO("Methods on more complex sample graphs work as expected") {
   GIVEN("sample graph") {
