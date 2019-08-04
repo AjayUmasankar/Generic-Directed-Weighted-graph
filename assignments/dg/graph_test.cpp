@@ -139,6 +139,8 @@ SCENARIO("Graph Constructor with vectors work") {
         REQUIRE(g.NumNodes() == v.size());
         for (const auto& e : v)
           REQUIRE(g.IsNode(e));
+        REQUIRE_THAT(g.GetNodes(), Catch::Matchers::Equals(std::vector<int>{1,2,3,4,5}));
+        REQUIRE(g.NumEdges() == 0);
       }
     }
   }
@@ -152,6 +154,8 @@ SCENARIO("Graph Constructor with vectors work") {
         REQUIRE(g.NumNodes() == v.size());
         for (const auto& e : v)
           REQUIRE(g.IsNode(e));
+        REQUIRE_THAT(g.GetNodes(), Catch::Matchers::Equals(std::vector<std::string>{"Hello","are","how","you"}));
+
       }
     }
   }
@@ -266,11 +270,12 @@ SCENARIO("Graph copy constructor/assignment work") {
   GIVEN("Graph constructed with initializer list of chars") {
     gdwg::Graph<char, std::string> g{'c', 's', 'e'};
     WHEN("Copy constructor is used") {
+      g.InsertEdge('c','s',"howdy");
       gdwg::Graph<char, std::string> cp{g};
       THEN("Graph is copied with the nodes as expected") {
         REQUIRE(cp.IsEmpty() == false);
         REQUIRE(cp.NumNodes() == 3);
-        REQUIRE(cp.NumEdges() == 0);
+        REQUIRE(cp.NumEdges() == 1);
 
         REQUIRE(cp.IsNode('c') == true);
         REQUIRE(cp.IsNode('s') == true);
