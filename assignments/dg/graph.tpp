@@ -41,7 +41,7 @@ bool Graph<N, E>::InsertEdge(const N& src, const N& dst, const E& w) {
 
 
 template <typename N, typename E>
-bool Graph<N, E>::DeleteNode(const N& node) {
+bool Graph<N, E>::DeleteNode(const N& node) noexcept {
   if (edge_map_.find(Node{node}) == edge_map_.end()) {
     return false;
   }
@@ -61,7 +61,7 @@ bool Graph<N, E>::DeleteNode(const N& node) {
 
 
 template <typename N, typename E>
-bool Graph<N, E>::IsNode(const N& val) const {
+bool Graph<N, E>::IsNode(const N& val) const noexcept {
   return (edge_map_.find(Node{val}) != edge_map_.end());
 }
 
@@ -82,10 +82,10 @@ bool Graph<N, E>::IsConnected(const N& src, const N& dst) const {
 
 
 template <typename N, typename E>
-std::vector<N> Graph<N, E>::GetNodes() const {
+std::vector<N> Graph<N, E>::GetNodes() const noexcept {
   std::vector<N> node_vector;
-  for(const auto [key, val] : edge_map_) {
-    node_vector.push_back(*key);
+  for(const auto& key : edge_map_) {
+    node_vector.push_back(*key.first);
   }
   return node_vector;
 }
@@ -175,7 +175,7 @@ void Graph<N,E>::MergeReplace(const N& oldData, const N& newData) {
 //}
 
 template <typename N, typename E>
-typename Graph<N, E>::const_iterator Graph<N, E>::cbegin() const {
+typename Graph<N, E>::const_iterator Graph<N, E>::cbegin() const noexcept{
   auto first_edge_it = std::find_if(edge_map_.cbegin(), edge_map_.cend(),
                                     []  (const std::pair<Node, std::set<Edge, EdgeCmp>>& item) {
                                       return !item.second.empty();
@@ -184,7 +184,7 @@ typename Graph<N, E>::const_iterator Graph<N, E>::cbegin() const {
 }
 
 template <typename N, typename E>
-typename Graph<N, E>::const_iterator Graph<N, E>::cend() const {
+typename Graph<N, E>::const_iterator Graph<N, E>::cend() const noexcept {
   auto first_edge_it = std::find_if(edge_map_.cbegin(), edge_map_.cend(),
                                     []  (const std::pair<Node, std::set<Edge, EdgeCmp>>& item) {
                                       return !item.second.empty();

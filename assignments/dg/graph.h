@@ -224,16 +224,16 @@ class Graph {
 // methods
   bool InsertNode(const N& val);
   bool InsertEdge(const N& src, const N& dst, const E& w);
-  bool DeleteNode(const N& node);
-  bool IsNode(const N& val) const;
+  bool DeleteNode(const N& node) noexcept;
+  bool IsNode(const N& val) const noexcept;
   bool IsConnected(const N& src, const N& dst) const;
-  std::vector<N> GetNodes() const;
+  std::vector<N> GetNodes() const noexcept;
   std::vector<N> GetConnected(const N& src) const;
   std::vector<E> GetWeights(const N& src, const N& dst) const;
   bool Replace(const N& oldData, const N& newData);
   void MergeReplace(const N& oldData, const N& newData);
-  const_iterator cbegin() const;
-  const_iterator cend() const;
+  const_iterator cbegin() const noexcept;
+  const_iterator cend() const noexcept;
 // iterator methods
 
   void Clear() {
@@ -241,7 +241,7 @@ class Graph {
   }
 
 
-  const_iterator find(const N& src, const N& dst, const E& weight) const {
+  const_iterator find(const N& src, const N& dst, const E& weight) const noexcept {
     for(auto it = cbegin(); it != cend(); ++it) {
       if (*it == std::tie(src, dst, weight)) {
         return it;
@@ -251,7 +251,7 @@ class Graph {
   }
 
 
-  bool erase(const N& src, const N& dst, const E& w) {
+  bool erase(const N& src, const N& dst, const E& w) noexcept {
     // if edge exists, delete it and return true. Else, false
     auto it = edge_map_.find(Node{src});
     if(it == edge_map_.end()) {
@@ -279,7 +279,7 @@ class Graph {
 //    return erased;
   }
 
-  const_iterator erase(const_iterator it) {
+  const_iterator erase(const_iterator it) noexcept {
     if(it == cend()) {
       return it;
     }
@@ -299,25 +299,25 @@ class Graph {
     return find(src_next, dst_next, weight_next);
   }
 
-  const_iterator begin() const { return cbegin(); }
-  const_iterator end() const { return cend(); }
+  const_iterator begin() const noexcept { return cbegin(); }
+  const_iterator end() const noexcept { return cend(); }
 
 
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-  const_reverse_iterator rbegin() const { return crbegin(); }
-  const_reverse_iterator rend() const { return crend(); }
-  const_reverse_iterator crbegin() const { return const_reverse_iterator{cend()}; }
-  const_reverse_iterator crend() const { return const_reverse_iterator{cbegin()}; }
+  const_reverse_iterator rbegin() const noexcept { return crbegin(); }
+  const_reverse_iterator rend() const noexcept { return crend(); }
+  const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator{cend()}; }
+  const_reverse_iterator crend() const noexcept { return const_reverse_iterator{cbegin()}; }
 
 // friends
 
-  friend bool operator==(const gdwg::Graph<N, E>& g1, const gdwg::Graph<N, E>& g2) {
+  friend bool operator==(const gdwg::Graph<N, E>& g1, const gdwg::Graph<N, E>& g2) noexcept {
     return g1.edge_map_ == g2.edge_map_;
   }
-  friend bool operator!=(const gdwg::Graph<N, E>& g1, const gdwg::Graph<N, E>& g2) {
+  friend bool operator!=(const gdwg::Graph<N, E>& g1, const gdwg::Graph<N, E>& g2) noexcept {
     return !(g1==g2);
   }
-  friend std::ostream& operator<<(std::ostream& os, const gdwg::Graph<N, E>& g) {
+  friend std::ostream& operator<<(std::ostream& os, const gdwg::Graph<N, E>& g) noexcept {
     for(const auto &[key, val]  : g.edge_map_) {
       std::cout << *key << " (\n";
       std::set<Edge, EdgeCmp> node_to_edge = val;
@@ -330,15 +330,15 @@ class Graph {
   }
 
 // common methods (not in spec)
-  bool IsEmpty() const {
+  bool IsEmpty() const noexcept {
     return edge_map_.empty();
   }
 
-  size_t NumNodes() const {
+  size_t NumNodes() const noexcept {
     return edge_map_.size();
   }
 
-  size_t NumEdges() const {
+  size_t NumEdges() const noexcept {
     size_t sum = 0;
     for (const auto& n : edge_map_)
       sum += n.second.size();
