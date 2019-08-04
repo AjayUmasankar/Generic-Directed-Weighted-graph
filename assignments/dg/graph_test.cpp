@@ -110,6 +110,28 @@ SCENARIO("Default Graph constructor and basic methods work") {
         }
       }
 
+      WHEN("GetWeights is used with non-existing lhs node") {
+        std::string node5{"e"};
+        THEN("exception is thrown as expected") {
+          REQUIRE_THROWS_WITH(g.GetWeights(node5, node1), "Cannot call Graph::GetWeights if src or dst node don't exist in the graph");
+        }
+      }
+
+      WHEN("GetWeights is used with non-existing rhs node") {
+        std::string node5{"e"};
+        THEN("exception is thrown as expected") {
+          REQUIRE_THROWS_WITH(g.GetWeights(node1, node5), "Cannot call Graph::GetWeights if src or dst node don't exist in the graph");
+        }
+      }
+
+      WHEN("GetWeights is used with non-existing nodes") {
+        std::string node5{"e"};
+        std::string node6{"f"};        
+        THEN("exception is thrown as expected") {
+          REQUIRE_THROWS_WITH(g.GetWeights(node5, node6), "Cannot call Graph::GetWeights if src or dst node don't exist in the graph");
+        }
+      }
+
       WHEN("Clear is used to clear graph") {
         g.Clear();
         THEN("Graph is clear as expected") {
