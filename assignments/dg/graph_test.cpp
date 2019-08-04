@@ -864,6 +864,44 @@ SCENARIO("Graph find works as expected") {
   }
 }
 
+SCENARIO("Graph erase (method) works as expected") {
+ gdwg::Graph<int, int> g;
+  GIVEN("Graph with no edges") {
+    REQUIRE(g.InsertNode(1) == true);
+    REQUIRE(g.InsertNode(88) == true);
+    REQUIRE(g.NumEdges() == 0);
+    THEN("Erase returns false when called") {
+      REQUIRE(g.erase(1, 88, 1) == false);
+      REQUIRE(g.NumEdges() == 0);
+    }
+  }
+  GIVEN("Graph with one edge") {
+    REQUIRE(g.InsertNode(1) == true);
+    REQUIRE(g.InsertNode(88) == true);
+    REQUIRE(g.InsertEdge(1,88,1) == true);
+    REQUIRE(g.NumEdges() == 1);
+    REQUIRE(g.IsConnected(1,88) == true);
+    THEN("Erase can remove first edge successfully") {
+      REQUIRE(g.erase(1, 88, 1) == true);
+      REQUIRE(g.NumEdges() == 0);
+      REQUIRE(g.IsConnected(1,88) == false);
+    }
+  }
+  GIVEN("Graph with two edges") {
+    REQUIRE(g.InsertNode(1) == true);
+    REQUIRE(g.InsertNode(88) == true);
+    REQUIRE(g.InsertEdge(1,88,1) == true);
+    REQUIRE(g.InsertEdge(1, 88, 2) == true);
+    REQUIRE(g.NumEdges() == 2);
+    REQUIRE(g.IsConnected(1,88) == true);
+    THEN("Erase can remove first edge successfully") {
+      REQUIRE(g.erase(1, 88, 1) == true);
+      REQUIRE(g.NumEdges() == 1);
+      REQUIRE(g.IsConnected(1,88) == true);
+    }
+  }
+}
+
 SCENARIO("Graph erase(iterator) works as expected") {
   gdwg::Graph<int, int> g;
   GIVEN("Graph with no edges") {
