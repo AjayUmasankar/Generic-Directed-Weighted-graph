@@ -573,6 +573,31 @@ SCENARIO("Graph Replace Node works") {
   }
 }
 
+SCENARIO("Graph GetNodes works") {
+  GIVEN("Graph with assortment of nodes") {
+    gdwg::Graph<int, int> g;
+    g.InsertNode(1);
+    g.InsertNode(5);
+    g.InsertNode(4);
+    g.InsertNode(3);
+    g.InsertNode(2);
+    WHEN("GetNodes is used") {
+      THEN("vector of sorted nodes is returned") {
+        REQUIRE_THAT(g.GetNodes(), Catch::Matchers::Equals(std::vector<int>{1,2,3,4,5}));
+      }
+    }
+  }
+
+  GIVEN("Empty graph") {
+    gdwg::Graph<int, int> g;
+    WHEN("GetNodes is used") {
+      THEN("empty vector is returned") {
+        REQUIRE(g.GetNodes().empty());
+      }
+    }
+  }
+}
+
 SCENARIO("Graph MergeReplace works") {
   GIVEN("Basic MergeReplace Example from Specifications") {
     gdwg::Graph<std::string, int> g;
