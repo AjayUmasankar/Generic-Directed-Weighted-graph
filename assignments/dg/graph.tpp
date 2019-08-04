@@ -45,31 +45,29 @@ bool Graph<N, E>::DeleteNode(const N& node) {
   if (edge_map.find(Node{node}) == edge_map.end()) {
     return false;
   }
-  Node to_remove = *edge_map.find(Node{node})->first;
-  std::shared_ptr<N> node_sp = to_remove.get();
+  edge_map.erase(Node{node});
   for (auto it = edge_map.begin(); it != edge_map.end(); ++it) {
     std::set<Edge,EdgeCmp>& edge_set = it->second;
     for(auto edge_it = edge_set.begin(); edge_it != edge_set.end();) {
-      if (*edge_it->dst.lock() == node) {
+      if (edge_it->dst.expired()) {
         edge_it = edge_set.erase(edge_it);
       } else {
         ++edge_it;
       }
     }
   }
-  edge_map.erase(to_remove);
   return true;
 }
 
 
 template <typename N, typename E>
-bool Graph<N, E>::IsNode(const N& val) {
+bool Graph<N, E>::IsNode(const N& val) const {
   return (edge_map.find(Node{val}) != edge_map.end());
 }
 
 
 template <typename N, typename E>
-bool Graph<N, E>::IsConnected(const N& src, const N& dst) {
+bool Graph<N, E>::IsConnected(const N& src, const N& dst) const {
   if(!IsNode(src) || !IsNode(dst)) {
     throw std::runtime_error("Cannot call Graph::IsConnected if src or dst node don't exist in the graph");
   }
@@ -84,7 +82,7 @@ bool Graph<N, E>::IsConnected(const N& src, const N& dst) {
 
 
 template <typename N, typename E>
-std::vector<N> Graph<N, E>::GetNodes() {
+std::vector<N> Graph<N, E>::GetNodes() const {
   std::vector<N> node_vector;
   for(const auto [key, val] : edge_map) {
     node_vector.push_back(*key);
@@ -94,7 +92,7 @@ std::vector<N> Graph<N, E>::GetNodes() {
 
 
 template <typename N, typename E>
-std::vector<N> Graph<N, E>::GetConnected(const N& src) {
+std::vector<N> Graph<N, E>::GetConnected(const N& src) const {
   if (!IsNode(src)) {
     throw std::out_of_range("Cannot call Graph::GetConnected if src doesn't exist in the graph");
   }
@@ -109,7 +107,7 @@ std::vector<N> Graph<N, E>::GetConnected(const N& src) {
 
 
 template <typename N, typename E>
-std::vector<E> Graph<N, E>::GetWeights(const N& src, const N& dst) {
+std::vector<E> Graph<N, E>::GetWeights(const N& src, const N& dst) const {
   if (!IsNode(src) || !IsNode(dst)) {
     throw std::out_of_range("Cannot call Graph::GetWeights if src or dst node don't exist in the graph");
   }

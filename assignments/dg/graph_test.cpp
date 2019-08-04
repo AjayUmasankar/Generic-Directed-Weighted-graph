@@ -733,6 +733,7 @@ SCENARIO("Graph iterator navigates edges in correct order") {
           REQUIRE(*it == expected_edges[9 - i++]);
         }
       }
+
       THEN("Edges are as expected when using postincrement") {
         int i = 0;
         for(auto it = g.rbegin(); it != g.rend(); it++) {
@@ -903,77 +904,66 @@ SCENARIO("Graph erase(iterator) works as expected") {
 
 
 
-SCENARIO("Methods on more complex sample graphs work as expected") {
-  GIVEN("sample graph") {
-    gdwg::Graph<int, int> g;
-    g.InsertNode(1);
-    g.InsertNode(2);
-    g.InsertNode(3);
-    g.InsertNode(4);
-    g.InsertNode(5);
-    g.InsertNode(6);
-    g.InsertEdge(1, 5, -1);
-    g.InsertEdge(4, 1, -4);
-    g.InsertEdge(4, 5, 3);
-    g.InsertEdge(2, 4, 2);
-    g.InsertEdge(2, 1, 1);
-    g.InsertEdge(5, 2, 7);
-    g.InsertEdge(3, 2, 2);
-    g.InsertEdge(6, 3, 10);
-    g.InsertEdge(3, 6, -8);
-    g.InsertEdge(6, 2, 5);
-    //  graph_string == "1 (\n"
-    //                  "  5 | -1\n"
-    //                  ")\n"
-    //                  "2 (\n"
-    //                  "  1 | 1\n"
-    //                  "  4 | 2\n"
-    //                  ")\n"
-    //                  "3 (\n"
-    //                  "  2 | -8\n"
-    //                  "  2 | 2\n"  -> 6 | -8 (error in assignment spec)
-    //                  ")\n"
-    //                  "4 (\n"
-    //                  "  1 | -4\n"
-    //                  "  5 | 3\n"
-    //                  "5 (\n"
-    //                  "  2 | 7\n"
-    //                  ")\n"
-    //                  "6 (\n"
-    //                  "  2 | 5\n"
-    //                  "  3 | 10\n"
-    //                  ")"
-
-    REQUIRE(g.IsNode(6) == true);
-    REQUIRE(g.IsNode(1));
-    REQUIRE(g.IsConnected(1, 5));
-    REQUIRE(g.IsConnected(3, 2));
-    REQUIRE_THAT(g.GetNodes(), Catch::Matchers::Equals(std::vector<int>{1, 2, 3, 4, 5, 6}));
-    REQUIRE_THAT(g.GetConnected(4), Catch::Matchers::Equals(std::vector<int>{1, 5}));
-    REQUIRE_THAT(g.GetWeights(3, 6), Catch::Matchers::Equals(std::vector<int>{-8}));
-    WHEN("MergeReplace is called successfully") {
-      // TODO: Edge case where duplicate edges are removed
-      REQUIRE_FALSE(g.IsConnected(4, 6));
-      REQUIRE_FALSE(g.IsConnected(2, 6));
-      //      g.MergeReplace(1, 6);
-      //      // 4->6 and 2->6 created (since 4->1 and 2->1 exist)
-      //      REQUIRE(g.IsConnected(4,6));
-      //      REQUIRE(g.IsConnected(2,6));
-      // REQUIRE_THAT(g.GetConnected(6), Catch::Matchers::Equals(std::vector<int>{1,5}));
-      // do print graph check aswell
+SCENARIO("Const graphs can call appropriate const member functions") {
+  GIVEN("Const graph with some nodes and edges") {
+    gdwg::Graph<int, int> g_creator;
+    REQUIRE(g_creator.InsertNode(2) == true);
+    REQUIRE(g_creator.InsertNode(3) == true);
+    REQUIRE(g_creator.InsertNode(5) == true);
+    REQUIRE(g_creator.InsertNode(4) == true);
+    REQUIRE(g_creator.InsertNode(6) == true);
+    REQUIRE(g_creator.InsertNode(1) == true);
+    REQUIRE(g_creator.InsertEdge(1, 5, -1) == true);
+    REQUIRE(g_creator.InsertEdge(4, 1, -4) == true);
+    REQUIRE(g_creator.InsertEdge(4, 5, 3) == true);
+    REQUIRE(g_creator.InsertEdge(2, 4, 2) == true);
+    REQUIRE(g_creator.InsertEdge(2, 1, 1) == true);
+    REQUIRE(g_creator.InsertEdge(5, 2, 7) == true);
+    REQUIRE(g_creator.InsertEdge(3, 2, 2) == true);
+    REQUIRE(g_creator.InsertEdge(6, 3, 10) == true);
+    REQUIRE(g_creator.InsertEdge(3, 6, -8) == true);
+    REQUIRE(g_creator.InsertEdge(6, 2, 5) == true);
+    REQUIRE(g_creator.InsertEdge(6, 2, -10) == true);
+    const gdwg::Graph<int, int> g = g_creator;
+    THEN("IsNode works") {
+      REQUIRE(g.IsNode(2) == true);
     }
-    WHEN("Clear is called on the graph") {
-      g.Clear();
-      REQUIRE(g.GetNodes().size() == 0);
+    THEN("IsConnected works") {
+      REQUIRE(g.IsConnected(1,5) == true);
     }
-    // TODO: const_iterator find
-    WHEN("Erase is called on an existing edge") {
-      REQUIRE(g.IsConnected(5, 2));
-      REQUIRE(g.erase(5, 2, 7));
-      REQUIRE_FALSE(g.IsConnected(5, 2));
+    THEN("GetNodes works") {
+      REQUIRE_THAT(g.GetNodes(), Catch::Matchers::Equals(std::vector<int>{1,2,3,4,5,6}));
     }
-
-    // TODO: const_iterator erase
-    // TODO: lots of iterator methods
+    THEN("GetConnected works") {
+      REQUIRE_THAT(g.GetConnected(4), Catch::Matchers::Equals(std::vector<int>{1,5}));
+    }
+    THEN("GetWeights works") {
+      REQUIRE_THAT(g.GetWeights(6,2), Catch::Matchers::Equals(std::vector<int>{-10,5}));
+    }
+    THEN("Find works") {
+      auto it = g.find(2,4,2);
+      REQUIRE(*it == std::make_tuple(2,4,2));
+    }
+    THEN("Iterators contain correct order of edges") {
+      std::vector<std::tuple<int, int, int>> expected_edges = {{1,5,-1}, {2,1,1}, {2,4,2}, {3,2,2}, {3,6,-8}, {4,1,-4}, {4,5,3}, {5,2,7}, {6,2,-10}, {6,2,5}, {6,3,10}};
+      THEN("Edges are as expected when using preincrement") {
+        int i = 0;
+        for (auto it = g.rbegin(); it != g.rend(); ++it) {
+          REQUIRE(*it == expected_edges[10 - i++]);
+        }
+      }
+      THEN("Edges are as expected when using preincrement") {
+        int i = 0;
+        for(auto it = g.begin(); it != g.cend(); ++it) {
+          REQUIRE(*it == expected_edges[i++]);
+        }
+      }
+    }
+    THEN("Operator == works") {
+      REQUIRE(g == g_creator);
+    }
+    THEN("Operator != works") {
+      REQUIRE_FALSE(g != g_creator);
+    }
   }
 }

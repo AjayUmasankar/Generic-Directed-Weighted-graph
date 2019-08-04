@@ -15,6 +15,58 @@ namespace gdwg {
 
 template <typename N, typename E>
 class Graph {
+ private:
+  struct Edge {
+    std::weak_ptr<N> src;
+    std::weak_ptr<N> dst;
+    std::shared_ptr<E> weight;
+    friend bool operator==(const Edge& lhs, const Edge& rhs) {
+      return *lhs.src.lock() == *rhs.src.lock() && *lhs.dst.lock() == *rhs.dst.lock() && *lhs.weight == *rhs.weight;
+    }
+  };
+  class Node {
+   public:
+    Node(N value) : node_sp{std::make_shared<N>(value)} {};
+    N& operator* () const { return *node_sp; }
+    std::shared_ptr<N> get() const { return node_sp; }
+
+//    bool operator<(const Node& other) const {
+//      return *this < *other;
+//    }
+    friend bool operator==(const Node& lhs, const Node& rhs) {
+      return *lhs.node_sp == *rhs.node_sp;
+    }
+
+   private:
+    std::shared_ptr<N> node_sp;
+  };
+
+
+  struct NodeCmp {
+    bool operator() (const Node& lhs, const Node& rhs) const {
+      return *lhs < *rhs;
+    }
+  };
+
+  // this is the comparison as well as the ordering function for the set, cant seperate the two
+  struct EdgeCmp {
+    bool operator() (const Edge lhs, const Edge rhs) const {
+      N src1 = *lhs.src.lock();
+      N src2 = *rhs.src.lock();
+      if (src1 == src2) {
+        N dst1 = *lhs.dst.lock();
+        N dst2 = *rhs.dst.lock();
+        if(dst1 == dst2) {
+          E w1 = *lhs.weight;
+          E w2 = *rhs.weight;
+          return w1 < w2;
+        }
+        return dst1 < dst2;
+      }
+      return src1 < src2;
+    }
+  };
+
  public:
   Graph() : edge_map() {}
   Graph(typename std::vector<N>::const_iterator start, typename std::vector<N>::const_iterator end)
@@ -53,64 +105,24 @@ class Graph {
     Clear();
   }
 
-  struct Edge {
-    std::weak_ptr<N> src;
-    std::weak_ptr<N> dst;
-    std::shared_ptr<E> weight;
-    friend bool operator==(const Edge& lhs, const Edge& rhs) {
-      return *lhs.src.lock() == *rhs.src.lock() && *lhs.dst.lock() == *rhs.dst.lock() && *lhs.weight == *rhs.weight;
-    }
-  };
-  class Node {
-   public:
-    Node(N value) : node_sp{std::make_shared<N>(value)} {};
-    N& operator* () const { return *node_sp; }
-    std::shared_ptr<N> get() const { return node_sp; }
+  Graph<N, E>& operator=(const Graph<N, E>& other) const {
+    /*
+      if (this != &other)
+        then do the bottom?
+     */
+    edge_map = other.edge_map;
+    return *this;
+  }
 
-//    bool operator<(const Node& other) const {
-//      return *this < *other;
-//    }
-    friend bool operator==(const Node& lhs, const Node& rhs) {
-      return *lhs.node_sp == *rhs.node_sp;
-    }
-
-   private:
-    std::shared_ptr<N> node_sp;
-  };
-
-
-  struct NodeCmp {
-    bool operator() (const Node& lhs, const Node& rhs) const {
-      return *lhs < *rhs;
-    }
-  };
-
-
-  struct PtrCmp {
-    bool operator() (const std::shared_ptr<N> lhs, const std::shared_ptr<N> rhs) const {
-      return *lhs < *rhs;
-    }
-  };
-  // this is the comparison as well as the ordering function for the set, cant seperate the two
-  // Elements a and b are considered equal iff !(a < b) && !(b < a)
-  struct EdgeCmp {
-    bool operator() (const Edge lhs, const Edge rhs) const {
-      N src1 = *lhs.src.lock();
-      N src2 = *rhs.src.lock();
-      if (src1 == src2) {
-        N dst1 = *lhs.dst.lock();
-        N dst2 = *rhs.dst.lock();
-        if(dst1 == dst2) {
-          E w1 = *lhs.weight;
-          E w2 = *rhs.weight;
-          return w1 < w2;
-        }
-        return dst1 < dst2;
-      }
-      return src1 < src2;
-    }
-  };
-
+  Graph<N, E>& operator=(Graph<N, E>&& other) const {
+    /*
+      if (this != &other)
+        then do the bottom?
+     */
+    edge_map = std::move(other.edge_map);
+    other.Clear();
+    return *this;
+  }
 
 
   class const_iterator {
@@ -212,11 +224,11 @@ class Graph {
   bool InsertNode(const N& val);
   bool InsertEdge(const N& src, const N& dst, const E& w);
   bool DeleteNode(const N& node);
-  bool IsNode(const N& val);
-  bool IsConnected(const N& src, const N& dst);
-  std::vector<N> GetNodes();
-  std::vector<N> GetConnected(const N& src);
-  std::vector<E> GetWeights(const N& src, const N& dst);
+  bool IsNode(const N& val) const;
+  bool IsConnected(const N& src, const N& dst) const;
+  std::vector<N> GetNodes() const;
+  std::vector<N> GetConnected(const N& src) const;
+  std::vector<E> GetWeights(const N& src, const N& dst) const;
   bool Replace(const N& oldData, const N& newData);
   void MergeReplace(const N& oldData, const N& newData);
   const_iterator cbegin() const;
@@ -228,7 +240,7 @@ class Graph {
   }
 
 
-  const_iterator find(const N& src, const N& dst, const E& weight) {
+  const_iterator find(const N& src, const N& dst, const E& weight) const {
     for(auto it = cbegin(); it != cend(); ++it) {
       if (*it == std::tie(src, dst, weight)) {
         return it;
@@ -297,24 +309,7 @@ class Graph {
   const_reverse_iterator crend() const { return const_reverse_iterator{cbegin()}; }
 
 // friends
-  Graph<N, E>& operator=(const Graph<N, E>& other) {
-    /*
-      if (this != &other)
-        then do the bottom?
-     */
-    edge_map = other.edge_map;
-    return *this;
-  }
 
-  Graph<N, E>& operator=(Graph<N, E>&& other) {
-    /*
-      if (this != &other)
-        then do the bottom?
-     */
-    edge_map = std::move(other.edge_map);
-    other.Clear();
-    return *this;
-  }
 
   friend std::ostream& operator<<(std::ostream& os, const gdwg::Graph<N, E>& g) {
     for(const auto &[key, val]  : g.edge_map) {
@@ -347,10 +342,6 @@ class Graph {
 
 
  private:
-//  // maps input nodes into our heap-allocated equivalent
-//  cant do this because we are storing a copy of N
-//  std::map<N, std::shared_ptr<N>> node_map;
-  //std::set<Edge, EdgeCmp> edge_set;
   std::map<Node, std::set<Edge, EdgeCmp>, NodeCmp> edge_map;
 };
 
