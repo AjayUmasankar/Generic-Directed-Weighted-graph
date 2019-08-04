@@ -84,8 +84,8 @@ bool Graph<N, E>::IsConnected(const N& src, const N& dst) const {
 template <typename N, typename E>
 std::vector<N> Graph<N, E>::GetNodes() const {
   std::vector<N> node_vector;
-  for(const auto [key, val] : edge_map_) {
-    node_vector.push_back(*key);
+  for(const auto& key : edge_map_) {
+    node_vector.push_back(*key.first);
   }
   return node_vector;
 }
