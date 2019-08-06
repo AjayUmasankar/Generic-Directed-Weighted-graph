@@ -8,7 +8,7 @@
   behaviour required for different situations. Scenarios are written
   for graphs with some variation of ints and strings.
 
-  Tests were written for constructors, functions and operators. 
+  Tests were written for constructors, functions and operators.
   In these tests exceptions are checked for and const member functions are
   also checked. Some functions that require the graph not be changed are
   tested with the check_* family of catch2 macros so that extra assertions
@@ -16,14 +16,14 @@
 
   Tests begin by testing the default constructor along with basic functions
   such as insertnode, insertedge, isconnected, getconnected and getweight.
-  Extra functions implemented to aid testing are also tested here (isempty, 
+  Extra functions implemented to aid testing are also tested here (isempty,
   numnodes, numedges). The first test scenario serves as a base to ensure that
   basic functions that will be used in following test cases work.
 
-  Following this other test scenarios are introduced for each different 
+  Following this other test scenarios are introduced for each different
   constructor. Functions are tested following this, with exception testing
   if relevant. Replace and MergeReplace have tests that were lifted from
-  the specification examples. Extra tests were also written for corner cases 
+  the specification examples. Extra tests were also written for corner cases
   that the spec examples didn't cover.
 
   Graph iterator methods are tested for iteration order, ability to search
