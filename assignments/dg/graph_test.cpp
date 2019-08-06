@@ -1145,5 +1145,18 @@ SCENARIO("Const graphs can call appropriate const member functions") {
       g_creator.InsertNode(181);
       REQUIRE(g != g_creator);
     }
+    THEN("Operator << works") {
+      std::stringstream ss;
+      ss << g;
+      std::string string1;
+      int i = 0;
+      while (getline(ss, string1)) {
+        std::vector<std::string> expected = {
+            "1 (", "  5 | -1", ")",        "2 (", "  1 | 1", "  4 | 2",  ")",
+            "3 (", "  2 | 2",  "  6 | -8", ")",   "4 (",     "  1 | -4", "  5 | 3",
+            "5 (", "  2 | 7",  ")",        "6 (", "  2 | 5", "  3 | 10", ")"};
+        REQUIRE(string1 == expected[i++]);
+      }
+    }
   }
 }
