@@ -32,6 +32,10 @@
   Const member functions are tested with const objects to ensure that they
   work.
 
+  Ideally, we wanted to cover all possibilities that were in the spec as well
+  as edge cases that we could think of and I believe our tests are about as
+  extensive as they could be with our current knowledge.
+
 
 https://github.com/catchorg/Catch2/blob/master/docs/tutorial.md
 */
@@ -63,7 +67,7 @@ SCENARIO("Default Graph constructor and basic methods work") {
     WHEN("InsertNode is used to insert nodes") {
       std::string n1{"c"};
       REQUIRE(g.InsertNode(n1) == true);
-      THEN("node is inserted as expected") {
+      THEN("IsNode works as expected") {
         REQUIRE(g.IsNode(n1) == true);
         REQUIRE(g.IsEmpty() == false);
         REQUIRE(g.NumNodes() == 1);
@@ -72,13 +76,14 @@ SCENARIO("Default Graph constructor and basic methods work") {
       WHEN("second node is inserted") {
         std::string n2{"s"};
         REQUIRE(g.InsertNode(n2));
-        THEN("node is inserted as expected") {
+        THEN("IsNode works as expected") {
           REQUIRE(g.IsNode(n2) == true);
           REQUIRE(g.IsEmpty() == false);
           REQUIRE(g.NumNodes() == 2);
           REQUIRE(g.NumEdges() == 0);
         }
       }
+
       WHEN("existing node is inserted") {
         THEN("result of insertion is false and graph is unchanged") {
           REQUIRE(g.InsertNode(n1) == false);
@@ -194,15 +199,18 @@ SCENARIO("Default Graph constructor and basic methods work") {
         REQUIRE(g.InsertEdge(node2, node2, weight) == false);
       }
       REQUIRE(g.InsertEdge(node2, node1, weight + 1) == true);
-      THEN("Edges are inserted as expected") {
-        // this is a directed graph, so one edge!!
-        REQUIRE(g.NumEdges() == 5);
+      REQUIRE(g.NumEdges() == 5);
+      THEN("IsConnected works") {
         REQUIRE(g.IsConnected(node1, node2) == true);
         REQUIRE(g.IsConnected(node1, node3) == false);
+      }
+      THEN("GetWeights works") {
         REQUIRE(g.GetWeights(node1, node2)[0] == weight);
         REQUIRE(g.GetConnected(node1)[0] == node2);
         REQUIRE(g.GetWeights(node2, node3)[0] == -weight);
         REQUIRE(g.GetWeights(node2, node3)[1] == weight);
+      }
+      THEN("GetConnected Works") {
         REQUIRE(g.GetConnected(node2)[0] == node1);
         REQUIRE(g.GetConnected(node2)[1] == node2);
         REQUIRE(g.GetConnected(node2)[2] == node3);
@@ -573,6 +581,7 @@ SCENARIO("Graph Replace Node works") {
     WHEN("Replace is used with existing node and non-existing new node") {
       REQUIRE(g.Replace(1, num) == true);
       THEN("existing node is replaced with new data") {
+        // Old node is deleted, new node is added, hence NumNodes doesnt change
         REQUIRE(g.NumNodes() == num);
         REQUIRE(g.IsNode(num) == true);
         REQUIRE(g.IsNode(1) == false);
@@ -1131,6 +1140,10 @@ SCENARIO("Const graphs can call appropriate const member functions") {
       g_creator.DeleteNode(181);
       REQUIRE(g == g_creator);
     }
-    THEN("Operator != works") { REQUIRE_FALSE(g != g_creator); }
+    THEN("Operator != works") {
+      REQUIRE_FALSE(g != g_creator);
+      g_creator.InsertNode(181);
+      REQUIRE(g != g_creator);
+    }
   }
 }

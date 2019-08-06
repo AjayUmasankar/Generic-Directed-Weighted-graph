@@ -128,8 +128,8 @@ bool Graph<N, E>::Replace(const N& oldData, const N& newData) {
   for (const auto& Edge : old_edges) {
     InsertEdge(newData, *Edge.dst_.lock(), *Edge.weight_);
   }
-  DeleteNode(oldData);
-  return true;
+  return DeleteNode(oldData);
+  //return true;
 }
 
 template <typename N, typename E>
