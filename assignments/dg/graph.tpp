@@ -2,6 +2,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <utility>
 #include <vector>
 
 namespace gdwg {
@@ -129,7 +130,7 @@ bool Graph<N, E>::Replace(const N& oldData, const N& newData) {
     InsertEdge(newData, *Edge.dst_.lock(), *Edge.weight_);
   }
   return DeleteNode(oldData);
-  //return true;
+  // return true;
 }
 
 template <typename N, typename E>
