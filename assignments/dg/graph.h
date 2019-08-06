@@ -30,10 +30,6 @@ class Graph {
     explicit Node(N value) : sptr_{std::make_shared<N>(value)} {};
     N& operator*() const { return *sptr_; }
     std::shared_ptr<N> get() const { return sptr_; }
-
-    //    bool operator<(const Node& other) const {
-    //      return *this < *other;
-    //    }
     friend bool operator==(const Node& lhs, const Node& rhs) { return *lhs.sptr_ == *rhs.sptr_; }
 
    private:
@@ -231,6 +227,8 @@ class Graph {
   void MergeReplace(const N& oldData, const N& newData);
   const_iterator cbegin() const noexcept;
   const_iterator cend() const noexcept;
+  const_iterator erase(const_iterator it) noexcept;
+  bool erase(const N& src, const N& dst, const E& w) noexcept;
   // iterator methods
 
   void Clear() { edge_map_.clear(); }
@@ -242,53 +240,6 @@ class Graph {
       }
     }
     return cend();
-  }
-
-  bool erase(const N& src, const N& dst, const E& w) noexcept {
-    // if edge exists, delete it and return true. Else, false
-    auto it = edge_map_.find(Node{src});
-    if (it == edge_map_.end()) {
-      return false;
-    }
-
-    std::set<Edge, EdgeCmp>& edge_set = it->second;
-    auto edge_it = std::find_if(edge_set.cbegin(), edge_set.cend(), [=](const Edge& e) {
-      return *e.dst_.lock() == dst && *e.weight_ == w;
-    });
-
-    if (edge_it == edge_set.end()) {
-      return false;
-    } else {
-      edge_set.erase(edge_it);
-      return true;
-    }
-    //      if(*edge.dst.lock() == dst && *edge.weight == w) {
-    //        edge_set.erase(edge);
-    //        erased = true;
-    //        break;
-    //      }
-    //    }
-    //    return erased;
-  }
-
-  const_iterator erase(const_iterator it) noexcept {
-    if (it == cend()) {
-      return it;
-    }
-    N src;
-    N dst;
-    E weight;
-    std::tie(src, dst, weight) = *it++;
-    if (it == cend()) {
-      erase(src, dst, weight);
-      return cend();
-    }
-    N src_next;
-    N dst_next;
-    E weight_next;
-    std::tie(src_next, dst_next, weight_next) = *it;
-    erase(src, dst, weight);
-    return find(src_next, dst_next, weight_next);
   }
 
   const_iterator begin() const noexcept { return cbegin(); }

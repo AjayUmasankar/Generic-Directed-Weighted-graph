@@ -186,25 +186,54 @@ typename Graph<N, E>::const_iterator Graph<N, E>::cend() const noexcept {
   return Graph<N, E>::const_iterator{edge_map_.cend(), first_edge_it, edge_map_.cend()};
 }
 
-// template <typename N, typename E>
-// typename Graph<N,E>::const_iterator erase(typename Graph<N,E>::const_iterator it) {
-//  if(it == cend()) {
-//    return it;
-//  }
-//  N src;
-//  N dst;
-//  E weight;
-//  std::tie(src, dst, weight) = *it++;
-//  if(it == cend()) {
-//    erase(src, dst, weight);
-//    return cend();
-//  }
-//  N src_next;
-//  N dst_next;
-//  E weight_next;
-//  std::tie(src_next, dst_next, weight_next) = *it;
-//  erase(src, dst, weight);
-//  return find(src_next, dst_next, weight_next);
-//}
+template <typename N, typename E>
+typename Graph<N, E>::const_iterator
+Graph<N, E>::erase(typename Graph<N, E>::const_iterator it) noexcept {
+  if (it == Graph<N, E>::cend()) {
+    return it;
+  }
+  N src;
+  N dst;
+  E weight;
+  std::tie(src, dst, weight) = *it++;
+  if (it == Graph<N, E>::cend()) {
+    erase(src, dst, weight);
+    return Graph<N, E>::cend();
+  }
+  N src_next;
+  N dst_next;
+  E weight_next;
+  std::tie(src_next, dst_next, weight_next) = *it;
+  erase(src, dst, weight);
+  return find(src_next, dst_next, weight_next);
+}
+
+template <typename N, typename E>
+bool Graph<N, E>::erase(const N& src, const N& dst, const E& w) noexcept {
+  // if edge exists, delete it and return true. Else, false
+  auto it = edge_map_.find(Node{src});
+  if (it == edge_map_.end()) {
+    return false;
+  }
+
+  std::set<Edge, EdgeCmp>& edge_set = it->second;
+  auto edge_it = std::find_if(edge_set.cbegin(), edge_set.cend(), [=](const Edge& e) {
+    return *e.dst_.lock() == dst && *e.weight_ == w;
+  });
+
+  if (edge_it == edge_set.end()) {
+    return false;
+  } else {
+    edge_set.erase(edge_it);
+    return true;
+  }
+  //      if(*edge.dst.lock() == dst && *edge.weight == w) {
+  //        edge_set.erase(edge);
+  //        erased = true;
+  //        break;
+  //      }
+  //    }
+  //    return erased;
+}
 
 }  // namespace gdwg
